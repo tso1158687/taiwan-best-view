@@ -68,6 +68,8 @@ function createAttachment({ originalPath, originalName, submissionPath, submissi
     exifStatus: conversion?.exifStatus || (metadata.creation ? "partial" : "not_checked"),
     gpsStatus: conversion?.gpsStatus || "not_checked",
     capturedAt: conversion?.capturedAt || sipsDateToTaiwanIso(metadata.creation),
+    latitude: conversion?.latitude ?? null,
+    longitude: conversion?.longitude ?? null,
     acceptedByOfficial: ["jpg", "jpeg", "png", "bmp", "tiff"].includes(submissionExtension),
     verificationSource: conversion?.verificationSource || "sips",
     note: conversion?.note || "",
@@ -173,6 +175,7 @@ async function main() {
       exifStatus: attachment.exifStatus,
       gpsStatus: attachment.gpsStatus,
       capturedAt: attachment.capturedAt,
+      hasGps: typeof attachment.latitude === "number" && typeof attachment.longitude === "number",
       note: attachment.note,
     })),
   };

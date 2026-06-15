@@ -109,6 +109,12 @@
           "capturedAt": {
             "type": "string"
           },
+          "latitude": {
+            "type": ["number", "null"]
+          },
+          "longitude": {
+            "type": ["number", "null"]
+          },
           "acceptedByOfficial": {
             "type": "boolean"
           },

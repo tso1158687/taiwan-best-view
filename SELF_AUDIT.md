@@ -19,7 +19,7 @@ npm run create:case -- test-files --jurisdiction taipei
 
 Observed output:
 
-- Created case workspace: `cases/case-20260615T044817`
+- Created case workspace: `cases/case-20260615T045149`
 - Copied original HEIC files to `originals/`
 - Converted submission files to `converted/IMG_2630.jpg` and `converted/IMG_2631.jpg`
 - Wrote `draft.json`
@@ -30,7 +30,9 @@ Metadata evidence:
 
 - `IMG_2630.jpg` contains JPEG EXIF date `2026:06:12 15:32:11`
 - `IMG_2631.jpg` contains JPEG EXIF date `2026:06:12 15:36:49`
-- GPS was not verified because `exiftool` is not installed in the current environment
+- `IMG_2630.jpg` does not contain GPS in the converted JPG
+- `IMG_2631.jpg` contains GPS in the converted JPG
+- Verification source: local JPEG EXIF parser, without `exiftool`
 
 ## MVP Plan Status
 
@@ -61,12 +63,13 @@ Evidence:
 - `scripts/convert-heic.mjs` converts HEIC/HEIF to JPG using macOS `sips`
 - Real HEIC files from `test-files/` converted successfully
 - Converted JPG files contain EXIF date metadata
+- Local JPEG EXIF parser can detect whether GPS is present in the converted JPG
 - Draft attachments record original and submission file names, paths, conversion status, EXIF status, GPS status, and verification source
 
 Remaining:
 
-- Full EXIF copy and GPS verification require `exiftool` or a deeper local EXIF parser
-- Current fallback can prove date metadata was preserved, but not GPS
+- Full EXIF copying is still better with `exiftool`
+- Current local parser can verify date and GPS presence after conversion, but does not yet copy missing metadata from the original HEIC into the JPG
 
 ### Phase 2: Photo Parsing
 
@@ -137,7 +140,7 @@ Remaining:
 npm run check
 npm run create:case -- test-files --jurisdiction taipei
 node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
-find cases/case-20260615T044817/converted -maxdepth 1 -type f -exec file {} \;
+find cases/case-20260615T045149/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
 All listed commands completed successfully on 2026-06-15.

@@ -62,6 +62,8 @@ export async function convertHeicOne(inputPath, outputDirectory, options = {}) {
     exifStatus: metadata.exifStatus,
     capturedAt: metadata.capturedAt,
     gpsStatus: metadata.gpsStatus,
+    latitude: metadata.latitude ?? null,
+    longitude: metadata.longitude ?? null,
     verificationSource: metadata.source,
     note: metadata.note,
   };
