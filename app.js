@@ -43,6 +43,9 @@ const jsonPreview = document.querySelector("#jsonPreview");
 const locationPanel = document.querySelector("#locationPanel");
 const locationList = document.querySelector("#locationList");
 const locationState = document.querySelector("#locationState");
+const photoAnalysisPanel = document.querySelector("#photoAnalysisPanel");
+const photoAnalysisList = document.querySelector("#photoAnalysisList");
+const photoAnalysisState = document.querySelector("#photoAnalysisState");
 const saveState = document.querySelector("#saveState");
 const validationState = document.querySelector("#validationState");
 const downloadButton = document.querySelector("#downloadButton");
@@ -51,6 +54,7 @@ const resetButton = document.querySelector("#resetButton");
 let selectedFiles = [];
 let importedAttachments = [];
 let importedLocationAssistance = null;
+let importedPhotoAnalysis = null;
 
 function toTaiwanIsoString(datetimeLocalValue) {
   if (!datetimeLocalValue) return "";
@@ -82,7 +86,7 @@ function replaceExtension(fileName, extension) {
 function createAttachmentSummary(file, jurisdiction) {
   const originalExtension = getFileExtension(file.name);
   const needsConversion = HEIC_EXTENSIONS.has(originalExtension);
-  const submissionExtension = needsConversion ? "jpg" : originalExtension;
+  const submissionExtension = needsConversion ? "png" : originalExtension;
   const allowedExtensions =
     jurisdiction === "new_taipei"
       ? NEW_TAIPEI_ALLOWED_EXTENSIONS
@@ -90,7 +94,7 @@ function createAttachmentSummary(file, jurisdiction) {
 
   return {
     originalName: file.name,
-    submissionName: needsConversion ? replaceExtension(file.name, "jpg") : file.name,
+    submissionName: needsConversion ? replaceExtension(file.name, "png") : file.name,
     originalExtension,
     submissionExtension,
     size: file.size,
@@ -124,6 +128,7 @@ function createCaseDraft() {
     originalFiles: attachments.map((attachment) => attachment.originalName),
     attachments,
     locationAssistance: selectedFiles.length > 0 ? null : importedLocationAssistance,
+    photoAnalysis: selectedFiles.length > 0 ? null : importedPhotoAnalysis,
     status: data.get("status"),
     updatedAt: new Date().toISOString(),
   };
@@ -148,7 +153,7 @@ function validateDraft(draft) {
 
   for (const attachment of draft.attachments) {
     if (attachment.needsConversion && attachment.conversionStatus !== "converted") {
-      errors.push(`${attachment.originalName} 需先轉成 JPG 並確認 EXIF`);
+      errors.push(`${attachment.originalName} 需先轉成 PNG 並確認 EXIF`);
       continue;
     }
 
@@ -196,7 +201,7 @@ function renderFiles() {
       if (attachment.conversionStatus === "converted") {
         badge.textContent = attachment.exifStatus === "partial" ? "已轉檔，EXIF 部分" : "已轉檔";
       } else if (attachment.needsConversion) {
-        badge.textContent = "需轉 JPG";
+        badge.textContent = "需轉 PNG";
       } else if (attachment.acceptedByOfficial) {
         badge.textContent = "可送件格式";
         badge.classList.add("is-ready");
@@ -220,7 +225,7 @@ function renderFiles() {
 
     const badge = item.querySelector(".file-badge");
     if (attachment.needsConversion) {
-      badge.textContent = "需轉 JPG";
+      badge.textContent = "需轉 PNG";
     } else if (attachment.acceptedByOfficial) {
       badge.textContent = "可送件格式";
       badge.classList.add("is-ready");
@@ -237,6 +242,7 @@ function renderPreview() {
   const errors = validateDraft(draft);
   jsonPreview.textContent = JSON.stringify(draft, null, 2);
   renderLocationAssistance(draft.locationAssistance);
+  renderPhotoAnalysis(draft.photoAnalysis);
 
   if (errors.length === 0) {
     validationState.textContent = "可人工確認";
@@ -246,6 +252,54 @@ function renderPreview() {
     validationState.className = errors.some((error) => error.includes("不可") || error.includes("不符合"))
       ? "status-pill error"
       : "status-pill warning";
+  }
+}
+
+function appendTextCandidateItem(titleText, candidates) {
+  if (!candidates || candidates.length === 0) return;
+
+  const item = document.createElement("li");
+  const title = document.createElement("div");
+  const meta = document.createElement("div");
+
+  title.className = "location-title";
+  title.textContent = titleText;
+  meta.className = "location-meta";
+  meta.textContent = candidates
+    .map((candidate) => `${candidate.text} (${Math.round((candidate.confidence || 0) * 100)}%)`)
+    .join("、");
+
+  item.append(title, meta);
+  photoAnalysisList.append(item);
+}
+
+function renderPhotoAnalysis(photoAnalysis) {
+  photoAnalysisList.textContent = "";
+
+  if (!photoAnalysis) {
+    photoAnalysisPanel.hidden = true;
+    return;
+  }
+
+  photoAnalysisPanel.hidden = false;
+  photoAnalysisState.textContent = photoAnalysis.status === "ok" ? "需人工確認" : "無法辨識";
+  photoAnalysisState.className = photoAnalysis.status === "ok" ? "status-pill warning" : "status-pill error";
+
+  appendTextCandidateItem("車牌候選", photoAnalysis.plateCandidates);
+  appendTextCandidateItem("地點文字線索", photoAnalysis.locationTextCandidates);
+
+  if (photoAnalysisList.children.length === 0) {
+    const item = document.createElement("li");
+    const title = document.createElement("div");
+    const meta = document.createElement("div");
+
+    title.className = "location-title";
+    title.textContent = "尚無可用文字線索";
+    meta.className = "location-meta";
+    meta.textContent = photoAnalysis.reason || "請改用人工確認或補拍更清楚的照片。";
+
+    item.append(title, meta);
+    photoAnalysisList.append(item);
   }
 }
 
@@ -348,6 +402,7 @@ function applyDraftToForm(draft) {
 
   importedAttachments = Array.isArray(draft.attachments) ? draft.attachments : [];
   importedLocationAssistance = draft.locationAssistance || null;
+  importedPhotoAnalysis = draft.photoAnalysis || null;
   selectedFiles = [];
   fileInput.value = "";
   renderFiles();
@@ -395,6 +450,7 @@ function resetDraft() {
   selectedFiles = [];
   importedAttachments = [];
   importedLocationAssistance = null;
+  importedPhotoAnalysis = null;
   fileInput.value = "";
   localStorage.removeItem(STORAGE_KEY);
   renderFiles();
@@ -406,6 +462,7 @@ fileInput.addEventListener("change", () => {
   selectedFiles = Array.from(fileInput.files || []);
   importedAttachments = [];
   importedLocationAssistance = null;
+  importedPhotoAnalysis = null;
   renderFiles();
   handleInputChange();
 });

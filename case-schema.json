@@ -100,7 +100,7 @@
           },
           "exifStatus": {
             "type": "string",
-            "enum": ["not_checked", "pending", "preserved", "partial", "missing"]
+            "enum": ["not_checked", "pending", "preserved", "partial", "missing", "sidecar"]
           },
           "gpsStatus": {
             "type": "string",
@@ -113,6 +113,12 @@
             "type": ["number", "null"]
           },
           "longitude": {
+            "type": ["number", "null"]
+          },
+          "renderedWidth": {
+            "type": ["number", "null"]
+          },
+          "renderedHeight": {
             "type": ["number", "null"]
           },
           "acceptedByOfficial": {
@@ -185,6 +191,54 @@
               }
             }
           }
+        }
+      }
+    },
+    "photoAnalysis": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "engine": {
+          "type": "string"
+        },
+        "plateCandidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "confidence": {
+                "type": "number"
+              },
+              "sourceText": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "locationTextCandidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "confidence": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "results": {
+          "type": "array"
+        },
+        "reason": {
+          "type": "string"
         }
       }
     },

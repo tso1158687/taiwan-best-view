@@ -5,6 +5,7 @@ import { fileSize, pathExists } from "./lib/system.mjs";
 import { IMAGE_EXTENSIONS, isHeic, readSipsMetadata, sipsDateToTaiwanIso } from "./lib/metadata.mjs";
 import { convertHeicOne } from "./lib/heic-conversion.mjs";
 import { createLocationCandidates } from "./lib/location-candidates.mjs";
+import { analyzePhotos } from "./lib/photo-analysis.mjs";
 
 const DEFAULT_DESCRIPTION = "車輛停放於違規地點，妨礙通行或影響交通安全。";
 
@@ -71,6 +72,8 @@ function createAttachment({ originalPath, originalName, submissionPath, submissi
     capturedAt: conversion?.capturedAt || sipsDateToTaiwanIso(metadata.creation),
     latitude: conversion?.latitude ?? null,
     longitude: conversion?.longitude ?? null,
+    renderedWidth: conversion?.renderedWidth ?? null,
+    renderedHeight: conversion?.renderedHeight ?? null,
     acceptedByOfficial: ["jpg", "jpeg", "png", "bmp", "tiff"].includes(submissionExtension),
     verificationSource: conversion?.verificationSource || "sips",
     note: conversion?.note || "",
@@ -146,6 +149,7 @@ async function main() {
     attachments.push(await processOne(input, caseDirectory));
   }
   const locationAssistance = createLocationCandidates(attachments);
+  const photoAnalysis = await analyzePhotos(attachments.map((attachment) => attachment.submissionPath));
 
   const draft = {
     jurisdiction: options.jurisdiction,
@@ -161,6 +165,7 @@ async function main() {
     originalFiles: attachments.map((attachment) => attachment.originalName),
     attachments,
     locationAssistance,
+    photoAnalysis,
     status: "draft",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -172,6 +177,14 @@ async function main() {
     submissionFiles: draft.files,
     occurredAtCandidate: draft.occurredAt,
     locationAssistance,
+    photoAnalysis: {
+      status: photoAnalysis.status,
+      engine: photoAnalysis.engine,
+      plateCandidates: photoAnalysis.plateCandidates,
+      locationTextCandidates: photoAnalysis.locationTextCandidates,
+      resultCount: photoAnalysis.results.length,
+      reason: photoAnalysis.reason,
+    },
     attachments: attachments.map((attachment) => ({
       originalName: attachment.originalName,
       submissionName: attachment.submissionName,
@@ -180,6 +193,8 @@ async function main() {
       gpsStatus: attachment.gpsStatus,
       capturedAt: attachment.capturedAt,
       hasGps: typeof attachment.latitude === "number" && typeof attachment.longitude === "number",
+      renderedWidth: attachment.renderedWidth,
+      renderedHeight: attachment.renderedHeight,
       note: attachment.note,
     })),
   };

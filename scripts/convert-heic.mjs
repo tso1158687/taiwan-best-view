@@ -5,8 +5,8 @@ import { collectHeicInputs, convertHeicOne } from "./lib/heic-conversion.mjs";
 function usage() {
   console.log("Usage: node scripts/convert-heic.mjs <input-file-or-directory> [output-directory]");
   console.log("");
-  console.log("Converts HEIC/HEIF files to JPG using macOS sips.");
-  console.log("If exiftool is installed, metadata is copied and DateTime/GPS fields are verified.");
+  console.log("Converts HEIC/HEIF files to official-site-compatible PNG using macOS QuickLook.");
+  console.log("Metadata is preserved in the generated draft sidecar data; exiftool can additionally embed metadata.");
 }
 
 async function main() {
@@ -20,8 +20,8 @@ async function main() {
     throw new Error(`Input does not exist: ${inputArg}`);
   }
 
-  if (!(await commandExists("sips"))) {
-    throw new Error("macOS sips is required for HEIC conversion.");
+  if (!(await commandExists("qlmanage"))) {
+    throw new Error("macOS qlmanage is required for HEIC image rendering.");
   }
 
   const hasExiftool = await commandExists("exiftool");

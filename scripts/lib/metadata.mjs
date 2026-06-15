@@ -217,7 +217,36 @@ export async function verifyWithExiftool(path) {
   };
 }
 
-export async function verifyConvertedMetadata(inputPath, outputPath) {
+export async function verifySidecarMetadata(inputPath, outputPath) {
+  const probePath = `${outputPath}.metadata.jpg`;
+  await run("sips", ["-s", "format", "jpeg", inputPath, "--out", probePath]);
+  const inputSips = await readSipsMetadata(inputPath);
+  const probeExif = await readJpegExif(probePath);
+  const outputDate = probeExif.capturedAt ? probeExif.capturedAt.replace(/-/g, ":").replace("T", " ").replace("+08:00", "") : "";
+  const inputDate = inputSips.creation || "";
+  const hasPreservedDate = Boolean(inputDate && outputDate && inputDate === outputDate);
+  const hasGps = probeExif.hasGps;
+
+  return {
+    capturedAt: probeExif.capturedAt || sipsDateToTaiwanIso(inputDate),
+    latitude: probeExif.latitude,
+    longitude: probeExif.longitude,
+    hasDate: hasPreservedDate,
+    hasGps,
+    exifStatus: hasPreservedDate && hasGps ? "sidecar" : hasPreservedDate ? "sidecar" : "missing",
+    gpsStatus: hasGps ? "present" : "missing",
+    source: "quicklook+sidecar-exif",
+    note: hasGps
+      ? "Submission PNG is visually rendered; date and GPS were preserved in the draft metadata from the original HEIC."
+      : "Submission PNG is visually rendered; date was preserved in draft metadata, but GPS was not found.",
+  };
+}
+
+export async function verifyConvertedMetadata(inputPath, outputPath, options = {}) {
+  if (options.sidecarOnly) {
+    return verifySidecarMetadata(inputPath, outputPath);
+  }
+
   if (await commandExists("exiftool")) {
     return verifyWithExiftool(outputPath);
   }
