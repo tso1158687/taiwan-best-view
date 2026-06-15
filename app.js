@@ -46,6 +46,9 @@ const locationState = document.querySelector("#locationState");
 const photoAnalysisPanel = document.querySelector("#photoAnalysisPanel");
 const photoAnalysisList = document.querySelector("#photoAnalysisList");
 const photoAnalysisState = document.querySelector("#photoAnalysisState");
+const suggestionsPanel = document.querySelector("#suggestionsPanel");
+const suggestionsList = document.querySelector("#suggestionsList");
+const suggestionsState = document.querySelector("#suggestionsState");
 const saveState = document.querySelector("#saveState");
 const validationState = document.querySelector("#validationState");
 const downloadButton = document.querySelector("#downloadButton");
@@ -55,6 +58,7 @@ let selectedFiles = [];
 let importedAttachments = [];
 let importedLocationAssistance = null;
 let importedPhotoAnalysis = null;
+let importedFieldSuggestions = null;
 
 function toTaiwanIsoString(datetimeLocalValue) {
   if (!datetimeLocalValue) return "";
@@ -129,6 +133,7 @@ function createCaseDraft() {
     attachments,
     locationAssistance: selectedFiles.length > 0 ? null : importedLocationAssistance,
     photoAnalysis: selectedFiles.length > 0 ? null : importedPhotoAnalysis,
+    fieldSuggestions: selectedFiles.length > 0 ? null : importedFieldSuggestions,
     status: data.get("status"),
     updatedAt: new Date().toISOString(),
   };
@@ -243,6 +248,7 @@ function renderPreview() {
   jsonPreview.textContent = JSON.stringify(draft, null, 2);
   renderLocationAssistance(draft.locationAssistance);
   renderPhotoAnalysis(draft.photoAnalysis);
+  renderFieldSuggestions(draft.fieldSuggestions);
 
   if (errors.length === 0) {
     validationState.textContent = "可人工確認";
@@ -252,6 +258,66 @@ function renderPreview() {
     validationState.className = errors.some((error) => error.includes("不可") || error.includes("不符合"))
       ? "status-pill error"
       : "status-pill warning";
+  }
+}
+
+function suggestionLabel(field) {
+  if (field === "plate") return "車號";
+  if (field === "road") return "路段";
+  if (field === "addressNote") return "補充地點";
+  return field;
+}
+
+function applySuggestion(field, value) {
+  const target = form.elements[field];
+  if (!target) return;
+
+  if (field === "addressNote" && target.value.trim()) {
+    target.value = `${target.value.trim()}；${value}`;
+  } else {
+    target.value = value;
+  }
+
+  handleInputChange();
+  saveState.textContent = "已套用建議";
+}
+
+function renderFieldSuggestions(fieldSuggestions) {
+  suggestionsList.textContent = "";
+
+  if (!fieldSuggestions || fieldSuggestions.status === "empty") {
+    suggestionsPanel.hidden = true;
+    return;
+  }
+
+  suggestionsPanel.hidden = false;
+  suggestionsState.textContent = "需人工確認";
+  suggestionsState.className = "status-pill warning";
+
+  for (const field of ["plate", "road", "addressNote"]) {
+    const suggestions = fieldSuggestions[field] || [];
+    if (suggestions.length === 0) continue;
+
+    const group = document.createElement("div");
+    const title = document.createElement("div");
+    const actions = document.createElement("div");
+
+    group.className = "suggestion-group";
+    title.className = "suggestion-group-title";
+    title.textContent = suggestionLabel(field);
+    actions.className = "suggestion-actions";
+
+    for (const suggestion of suggestions) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "suggestion-action";
+      button.textContent = `${suggestion.value} (${Math.round((suggestion.confidence || 0) * 100)}%)`;
+      button.addEventListener("click", () => applySuggestion(field, suggestion.value));
+      actions.append(button);
+    }
+
+    group.append(title, actions);
+    suggestionsList.append(group);
   }
 }
 
@@ -403,6 +469,7 @@ function applyDraftToForm(draft) {
   importedAttachments = Array.isArray(draft.attachments) ? draft.attachments : [];
   importedLocationAssistance = draft.locationAssistance || null;
   importedPhotoAnalysis = draft.photoAnalysis || null;
+  importedFieldSuggestions = draft.fieldSuggestions || null;
   selectedFiles = [];
   fileInput.value = "";
   renderFiles();
@@ -451,6 +518,7 @@ function resetDraft() {
   importedAttachments = [];
   importedLocationAssistance = null;
   importedPhotoAnalysis = null;
+  importedFieldSuggestions = null;
   fileInput.value = "";
   localStorage.removeItem(STORAGE_KEY);
   renderFiles();
@@ -463,6 +531,7 @@ fileInput.addEventListener("change", () => {
   importedAttachments = [];
   importedLocationAssistance = null;
   importedPhotoAnalysis = null;
+  importedFieldSuggestions = null;
   renderFiles();
   handleInputChange();
 });

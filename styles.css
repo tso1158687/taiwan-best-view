@@ -398,6 +398,40 @@ textarea:focus {
   text-decoration: underline;
 }
 
+.suggestion-list {
+  display: grid;
+  gap: 12px;
+}
+
+.suggestion-group {
+  display: grid;
+  gap: 8px;
+}
+
+.suggestion-group-title {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.suggestion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggestion-action {
+  min-height: 34px;
+  border-color: var(--line);
+  background: #fbfcfb;
+  color: var(--ink);
+  font-size: 0.88rem;
+}
+
+.suggestion-action:hover {
+  border-color: var(--accent);
+}
+
 @media (max-width: 980px) {
   .workspace {
     grid-template-columns: 1fr;

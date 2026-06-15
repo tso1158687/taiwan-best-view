@@ -19,7 +19,7 @@ npm run create:case -- test-files --jurisdiction taipei
 
 Observed output:
 
-- Created case workspace: `cases/case-20260615T051146`
+- Created case workspace: `cases/case-20260615T052016`
 - Copied original HEIC files to `originals/`
 - Converted submission files to `converted/IMG_2630.png` and `converted/IMG_2631.png`
 - Wrote `draft.json`
@@ -30,6 +30,7 @@ Observed output:
 - Extracted OCR text candidates with Apple Vision
 - Extracted plate candidates including `3999YG` / `3999-B`
 - Extracted location text candidates including `傳品牛排`
+- Generated field suggestions for plate and address note
 
 Metadata evidence:
 
@@ -87,6 +88,7 @@ Evidence:
 - The earliest captured-at candidate is used as `occurredAt`
 - Apple Vision OCR reads converted PNG files
 - OCR plate candidates and location text candidates are written to `photoAnalysis`
+- Plate and address note field suggestions are written to `fieldSuggestions`
 
 Remaining:
 
@@ -104,6 +106,7 @@ Evidence:
 - `draft.json` records `locationAssistance`
 - `processing-report.json` records the generated GPS candidate and missing-GPS attachments
 - Frontend has a `地點候選` panel for imported drafts
+- Frontend has a `照片線索` panel and `欄位建議` panel for imported drafts
 
 Remaining:
 
@@ -156,7 +159,7 @@ npm run check
 npm run verify:test-files
 npm run create:case -- test-files --jurisdiction taipei
 node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
-find cases/case-20260615T051146/converted -maxdepth 1 -type f -exec file {} \;
+find cases/case-20260615T052016/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
 All listed commands completed successfully on 2026-06-15.

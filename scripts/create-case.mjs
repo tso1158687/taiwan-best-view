@@ -6,6 +6,7 @@ import { IMAGE_EXTENSIONS, isHeic, readSipsMetadata, sipsDateToTaiwanIso } from 
 import { convertHeicOne } from "./lib/heic-conversion.mjs";
 import { createLocationCandidates } from "./lib/location-candidates.mjs";
 import { analyzePhotos } from "./lib/photo-analysis.mjs";
+import { createFieldSuggestions } from "./lib/field-suggestions.mjs";
 
 const DEFAULT_DESCRIPTION = "車輛停放於違規地點，妨礙通行或影響交通安全。";
 
@@ -150,6 +151,7 @@ async function main() {
   }
   const locationAssistance = createLocationCandidates(attachments);
   const photoAnalysis = await analyzePhotos(attachments.map((attachment) => attachment.submissionPath));
+  const fieldSuggestions = createFieldSuggestions({ photoAnalysis, locationAssistance });
 
   const draft = {
     jurisdiction: options.jurisdiction,
@@ -166,6 +168,7 @@ async function main() {
     attachments,
     locationAssistance,
     photoAnalysis,
+    fieldSuggestions,
     status: "draft",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -177,6 +180,7 @@ async function main() {
     submissionFiles: draft.files,
     occurredAtCandidate: draft.occurredAt,
     locationAssistance,
+    fieldSuggestions,
     photoAnalysis: {
       status: photoAnalysis.status,
       engine: photoAnalysis.engine,

@@ -242,12 +242,67 @@
         }
       }
     },
+    "fieldSuggestions": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["needs_review", "empty"]
+        },
+        "plate": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fieldSuggestion"
+          }
+        },
+        "road": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fieldSuggestion"
+          }
+        },
+        "addressNote": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fieldSuggestion"
+          }
+        }
+      }
+    },
     "status": {
       "type": "string",
       "enum": ["draft", "ready_for_review", "submitted"]
     },
     "updatedAt": {
       "type": "string"
+    }
+  },
+  "$defs": {
+    "fieldSuggestion": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "evidence": {
+          "type": "string"
+        },
+        "maps": {
+          "type": "object"
+        },
+        "requiresReview": {
+          "type": "boolean"
+        }
+      }
     }
   }
 }
