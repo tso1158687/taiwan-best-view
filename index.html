@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Taiwan Best View</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">本機案件草稿器</p>
+        <h1>Taiwan Best View</h1>
+      </div>
+      <div class="header-actions">
+        <button type="button" id="resetButton" class="secondary-button">清空</button>
+        <button type="button" id="downloadButton" class="primary-button">下載 JSON</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="editor-panel" aria-labelledby="caseFormTitle">
+        <div class="section-heading">
+          <h2 id="caseFormTitle">案件草稿</h2>
+          <span id="saveState" class="status-pill">尚未儲存</span>
+        </div>
+
+        <form id="caseForm" class="case-form">
+          <fieldset>
+            <legend>案件分類</legend>
+            <div class="form-grid">
+              <label>
+                縣市
+                <select name="jurisdiction" required>
+                  <option value="taipei">台北市</option>
+                  <option value="new_taipei">新北市</option>
+                </select>
+              </label>
+              <label>
+                違規類型
+                <select name="violationType" required>
+                  <option value="illegal_parking">違規停車</option>
+                </select>
+              </label>
+              <label>
+                案件狀態
+                <select name="status" required>
+                  <option value="draft">草稿</option>
+                  <option value="ready_for_review">待人工確認</option>
+                  <option value="submitted">已送件</option>
+                </select>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>違規資訊</legend>
+            <div class="form-grid">
+              <label>
+                車號
+                <input name="plate" type="text" placeholder="ABC-1234" autocomplete="off" required>
+              </label>
+              <label>
+                違規日期時間
+                <input name="occurredAt" type="datetime-local" required>
+              </label>
+              <label>
+                行政區
+                <input name="district" type="text" placeholder="大安區" required>
+              </label>
+              <label>
+                路段
+                <input name="road" type="text" placeholder="信義路三段" required>
+              </label>
+              <label class="span-2">
+                補充地點
+                <input name="addressNote" type="text" placeholder="123號前人行道、路口方向、店家或地標">
+              </label>
+              <label>
+                違規事實
+                <input name="fact" type="text" value="違規停車" required>
+              </label>
+            </div>
+            <label>
+              違規事實說明
+              <textarea name="description" rows="4" placeholder="車輛停放於人行道，妨礙行人通行" required></textarea>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>附件</legend>
+            <label class="file-drop">
+              <input id="fileInput" name="files" type="file" accept="image/jpeg,image/png,image/bmp,image/tiff,video/quicktime,video/x-ms-wmv,video/x-msvideo,video/mp4,video/3gpp,video/mp2t,.gif,.flv,.mpeg,.mkv,.zip,.rar" multiple>
+              <span>選擇 1 到 5 個照片或影片</span>
+            </label>
+            <div id="fileSummary" class="file-summary">尚未選擇附件</div>
+            <ul id="fileList" class="file-list" aria-live="polite"></ul>
+          </fieldset>
+        </form>
+      </section>
+
+      <aside class="preview-panel" aria-labelledby="previewTitle">
+        <div class="section-heading">
+          <h2 id="previewTitle">JSON 預覽</h2>
+          <span id="validationState" class="status-pill warning">需補資料</span>
+        </div>
+        <pre id="jsonPreview" class="json-preview">{}</pre>
+      </aside>
+    </main>
+
+    <template id="fileItemTemplate">
+      <li>
+        <span class="file-name"></span>
+        <span class="file-meta"></span>
+      </li>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
