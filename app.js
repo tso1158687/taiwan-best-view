@@ -34,8 +34,10 @@ const NEW_TAIPEI_ALLOWED_EXTENSIONS = new Set([
 
 const form = document.querySelector("#caseForm");
 const fileInput = document.querySelector("#fileInput");
+const importInput = document.querySelector("#importInput");
 const fileList = document.querySelector("#fileList");
 const fileSummary = document.querySelector("#fileSummary");
+const importedFileSummary = document.querySelector("#importedFileSummary");
 const fileItemTemplate = document.querySelector("#fileItemTemplate");
 const jsonPreview = document.querySelector("#jsonPreview");
 const saveState = document.querySelector("#saveState");
@@ -44,6 +46,7 @@ const downloadButton = document.querySelector("#downloadButton");
 const resetButton = document.querySelector("#resetButton");
 
 let selectedFiles = [];
+let importedAttachments = [];
 
 function toTaiwanIsoString(datetimeLocalValue) {
   if (!datetimeLocalValue) return "";
@@ -98,7 +101,10 @@ function createAttachmentSummary(file, jurisdiction) {
 function createCaseDraft() {
   const data = new FormData(form);
   const jurisdiction = data.get("jurisdiction");
-  const attachments = selectedFiles.map((file) => createAttachmentSummary(file, jurisdiction));
+  const attachments =
+    selectedFiles.length > 0
+      ? selectedFiles.map((file) => createAttachmentSummary(file, jurisdiction))
+      : importedAttachments;
 
   return {
     jurisdiction,
@@ -120,7 +126,10 @@ function createCaseDraft() {
 
 function validateDraft(draft) {
   const errors = [];
-  const totalBytes = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+  const totalBytes =
+    selectedFiles.length > 0
+      ? selectedFiles.reduce((sum, file) => sum + file.size, 0)
+      : draft.attachments.reduce((sum, attachment) => sum + (attachment.size || 0), 0);
 
   if (!draft.plate) errors.push("請填車號");
   if (!draft.occurredAt) errors.push("請填違規日期時間");
@@ -128,13 +137,18 @@ function validateDraft(draft) {
   if (!draft.road) errors.push("請填路段");
   if (!draft.fact) errors.push("請填違規事實");
   if (!draft.description) errors.push("請填違規事實說明");
-  if (selectedFiles.length < 1) errors.push("請至少選擇 1 個附件");
-  if (selectedFiles.length > MAX_FILES) errors.push("附件最多 5 個檔案");
+  if (draft.attachments.length < 1) errors.push("請至少選擇 1 個附件");
+  if (draft.attachments.length > MAX_FILES) errors.push("附件最多 5 個檔案");
   if (totalBytes > MAX_TOTAL_BYTES) errors.push("附件總容量不可超過 80MB");
 
   for (const attachment of draft.attachments) {
-    if (attachment.needsConversion) {
+    if (attachment.needsConversion && attachment.conversionStatus !== "converted") {
       errors.push(`${attachment.originalName} 需先轉成 JPG 並確認 EXIF`);
+      continue;
+    }
+
+    if (attachment.conversionStatus === "converted" && attachment.exifStatus === "missing") {
+      errors.push(`${attachment.originalName} 已轉檔，但缺少 EXIF`);
       continue;
     }
 
@@ -156,9 +170,37 @@ function validateDraft(draft) {
 
 function renderFiles() {
   fileList.textContent = "";
+  importedFileSummary.textContent = "";
+
+  if (selectedFiles.length === 0 && importedAttachments.length === 0) {
+    fileSummary.textContent = "尚未選擇附件";
+    return;
+  }
 
   if (selectedFiles.length === 0) {
-    fileSummary.textContent = "尚未選擇附件";
+    const totalBytes = importedAttachments.reduce((sum, attachment) => sum + (attachment.size || 0), 0);
+    fileSummary.textContent = `${importedAttachments.length} 個匯入附件，總計 ${formatBytes(totalBytes)}`;
+    importedFileSummary.textContent = "匯入的附件路徑會保留在 JSON；若要重新選檔，請使用上方附件欄位。";
+
+    for (const attachment of importedAttachments) {
+      const item = fileItemTemplate.content.firstElementChild.cloneNode(true);
+      item.querySelector(".file-name").textContent = attachment.originalName;
+      item.querySelector(".file-meta").textContent = formatBytes(attachment.size || 0);
+
+      const badge = item.querySelector(".file-badge");
+      if (attachment.conversionStatus === "converted") {
+        badge.textContent = attachment.exifStatus === "partial" ? "已轉檔，EXIF 部分" : "已轉檔";
+      } else if (attachment.needsConversion) {
+        badge.textContent = "需轉 JPG";
+      } else if (attachment.acceptedByOfficial) {
+        badge.textContent = "可送件格式";
+        badge.classList.add("is-ready");
+      } else {
+        badge.textContent = "不支援";
+      }
+
+      fileList.append(item);
+    }
     return;
   }
 
@@ -225,11 +267,7 @@ function restoreDraft() {
 
   try {
     const draft = JSON.parse(saved);
-    for (const [key, value] of Object.entries(draft)) {
-      const field = form.elements[key];
-      if (!field || key === "files") continue;
-      field.value = key === "occurredAt" ? toDatetimeLocalValue(value) : value;
-    }
+    applyDraftToForm(draft);
     saveState.textContent = "已載入暫存";
   } catch {
     localStorage.removeItem(STORAGE_KEY);
@@ -237,6 +275,36 @@ function restoreDraft() {
   }
 
   renderPreview();
+}
+
+function applyDraftToForm(draft) {
+  for (const [key, value] of Object.entries(draft)) {
+    const field = form.elements[key];
+    if (!field || key === "files") continue;
+    field.value = key === "occurredAt" ? toDatetimeLocalValue(value) : value;
+  }
+
+  importedAttachments = Array.isArray(draft.attachments) ? draft.attachments : [];
+  selectedFiles = [];
+  fileInput.value = "";
+  renderFiles();
+}
+
+async function importDraft(file) {
+  if (!file) return;
+
+  try {
+    const draft = JSON.parse(await file.text());
+    applyDraftToForm(draft);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+    renderPreview();
+    saveState.textContent = "已匯入 JSON";
+  } catch {
+    validationState.textContent = "JSON 格式無法讀取";
+    validationState.className = "status-pill error";
+  } finally {
+    importInput.value = "";
+  }
 }
 
 function downloadDraft() {
@@ -262,6 +330,7 @@ function downloadDraft() {
 function resetDraft() {
   form.reset();
   selectedFiles = [];
+  importedAttachments = [];
   fileInput.value = "";
   localStorage.removeItem(STORAGE_KEY);
   renderFiles();
@@ -271,8 +340,13 @@ function resetDraft() {
 
 fileInput.addEventListener("change", () => {
   selectedFiles = Array.from(fileInput.files || []);
+  importedAttachments = [];
   renderFiles();
   handleInputChange();
+});
+
+importInput.addEventListener("change", () => {
+  importDraft(importInput.files?.[0]);
 });
 
 form.addEventListener("input", handleInputChange);

@@ -13,6 +13,10 @@
         <h1>Taiwan Best View</h1>
       </div>
       <div class="header-actions">
+        <label class="import-button">
+          匯入 JSON
+          <input id="importInput" type="file" accept="application/json,.json">
+        </label>
         <button type="button" id="resetButton" class="secondary-button">清空</button>
         <button type="button" id="downloadButton" class="primary-button">下載 JSON</button>
       </div>
@@ -95,6 +99,7 @@
             </label>
             <p class="helper-text">HEIC/HEIF 會標示為需先轉成 JPG，並在送件前檢查 EXIF 是否保留。</p>
             <div id="fileSummary" class="file-summary">尚未選擇附件</div>
+            <div id="importedFileSummary" class="file-summary secondary-summary"></div>
             <ul id="fileList" class="file-list" aria-live="polite"></ul>
           </fieldset>
         </form>

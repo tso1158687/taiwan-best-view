@@ -102,8 +102,21 @@
             "type": "string",
             "enum": ["not_checked", "pending", "preserved", "partial", "missing"]
           },
+          "gpsStatus": {
+            "type": "string",
+            "enum": ["not_checked", "present", "missing"]
+          },
+          "capturedAt": {
+            "type": "string"
+          },
           "acceptedByOfficial": {
             "type": "boolean"
+          },
+          "verificationSource": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
           }
         }
       },
