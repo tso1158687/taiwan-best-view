@@ -159,6 +159,10 @@ button {
   margin-bottom: 20px;
 }
 
+.compact-heading {
+  margin-bottom: 12px;
+}
+
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -343,6 +347,55 @@ textarea:focus {
   padding: 16px;
   font-size: 0.88rem;
   line-height: 1.55;
+}
+
+.location-panel {
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 18px;
+}
+
+.location-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.location-list li {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.location-title {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.location-meta {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.location-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.location-links a {
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.location-links a:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 980px) {

@@ -128,6 +128,66 @@
       },
       "maxItems": 5
     },
+    "locationAssistance": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["needs_review", "manual_required"]
+        },
+        "missingGpsAttachments": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source", "confidence", "label", "latitude", "longitude", "evidenceFiles", "maps", "note"],
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "confidence": {
+                "type": "string",
+                "enum": ["needs_review"]
+              },
+              "label": {
+                "type": "string"
+              },
+              "latitude": {
+                "type": "number"
+              },
+              "longitude": {
+                "type": "number"
+              },
+              "evidenceFiles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "maps": {
+                "type": "object",
+                "properties": {
+                  "apple": {
+                    "type": "string"
+                  },
+                  "google": {
+                    "type": "string"
+                  }
+                }
+              },
+              "note": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
     "status": {
       "type": "string",
       "enum": ["draft", "ready_for_review", "submitted"]

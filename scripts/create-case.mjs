@@ -4,6 +4,7 @@ import { basename, extname, join, resolve } from "node:path";
 import { fileSize, pathExists } from "./lib/system.mjs";
 import { IMAGE_EXTENSIONS, isHeic, readSipsMetadata, sipsDateToTaiwanIso } from "./lib/metadata.mjs";
 import { convertHeicOne } from "./lib/heic-conversion.mjs";
+import { createLocationCandidates } from "./lib/location-candidates.mjs";
 
 const DEFAULT_DESCRIPTION = "車輛停放於違規地點，妨礙通行或影響交通安全。";
 
@@ -144,6 +145,7 @@ async function main() {
   for (const input of inputs) {
     attachments.push(await processOne(input, caseDirectory));
   }
+  const locationAssistance = createLocationCandidates(attachments);
 
   const draft = {
     jurisdiction: options.jurisdiction,
@@ -158,6 +160,7 @@ async function main() {
     files: attachments.map((attachment) => attachment.submissionName),
     originalFiles: attachments.map((attachment) => attachment.originalName),
     attachments,
+    locationAssistance,
     status: "draft",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -168,6 +171,7 @@ async function main() {
     inputCount: inputs.length,
     submissionFiles: draft.files,
     occurredAtCandidate: draft.occurredAt,
+    locationAssistance,
     attachments: attachments.map((attachment) => ({
       originalName: attachment.originalName,
       submissionName: attachment.submissionName,

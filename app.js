@@ -40,6 +40,9 @@ const fileSummary = document.querySelector("#fileSummary");
 const importedFileSummary = document.querySelector("#importedFileSummary");
 const fileItemTemplate = document.querySelector("#fileItemTemplate");
 const jsonPreview = document.querySelector("#jsonPreview");
+const locationPanel = document.querySelector("#locationPanel");
+const locationList = document.querySelector("#locationList");
+const locationState = document.querySelector("#locationState");
 const saveState = document.querySelector("#saveState");
 const validationState = document.querySelector("#validationState");
 const downloadButton = document.querySelector("#downloadButton");
@@ -47,6 +50,7 @@ const resetButton = document.querySelector("#resetButton");
 
 let selectedFiles = [];
 let importedAttachments = [];
+let importedLocationAssistance = null;
 
 function toTaiwanIsoString(datetimeLocalValue) {
   if (!datetimeLocalValue) return "";
@@ -119,6 +123,7 @@ function createCaseDraft() {
     files: attachments.map((attachment) => attachment.submissionName),
     originalFiles: attachments.map((attachment) => attachment.originalName),
     attachments,
+    locationAssistance: selectedFiles.length > 0 ? null : importedLocationAssistance,
     status: data.get("status"),
     updatedAt: new Date().toISOString(),
   };
@@ -231,6 +236,7 @@ function renderPreview() {
   const draft = createCaseDraft();
   const errors = validateDraft(draft);
   jsonPreview.textContent = JSON.stringify(draft, null, 2);
+  renderLocationAssistance(draft.locationAssistance);
 
   if (errors.length === 0) {
     validationState.textContent = "可人工確認";
@@ -240,6 +246,62 @@ function renderPreview() {
     validationState.className = errors.some((error) => error.includes("不可") || error.includes("不符合"))
       ? "status-pill error"
       : "status-pill warning";
+  }
+}
+
+function renderLocationAssistance(locationAssistance) {
+  locationList.textContent = "";
+
+  if (!locationAssistance) {
+    locationPanel.hidden = true;
+    return;
+  }
+
+  const candidates = locationAssistance.candidates || [];
+  const missingGpsAttachments = locationAssistance.missingGpsAttachments || [];
+  locationPanel.hidden = false;
+  locationState.textContent = candidates.length > 0 ? "需人工確認" : "需手動補";
+  locationState.className = candidates.length > 0 ? "status-pill warning" : "status-pill error";
+
+  for (const candidate of candidates) {
+    const item = document.createElement("li");
+    const title = document.createElement("div");
+    const meta = document.createElement("div");
+    const links = document.createElement("div");
+    const appleLink = document.createElement("a");
+    const googleLink = document.createElement("a");
+
+    title.className = "location-title";
+    title.textContent = candidate.label;
+    meta.className = "location-meta";
+    meta.textContent = `來源：${candidate.evidenceFiles.join("、")}。GPS 只當初始候選，仍需人工確認路段與方向。`;
+    links.className = "location-links";
+    appleLink.href = candidate.maps.apple;
+    appleLink.target = "_blank";
+    appleLink.rel = "noreferrer";
+    appleLink.textContent = "Apple Maps";
+    googleLink.href = candidate.maps.google;
+    googleLink.target = "_blank";
+    googleLink.rel = "noreferrer";
+    googleLink.textContent = "Google Maps";
+
+    links.append(appleLink, googleLink);
+    item.append(title, meta, links);
+    locationList.append(item);
+  }
+
+  if (missingGpsAttachments.length > 0) {
+    const item = document.createElement("li");
+    const title = document.createElement("div");
+    const meta = document.createElement("div");
+
+    title.className = "location-title";
+    title.textContent = "缺少 GPS 的照片";
+    meta.className = "location-meta";
+    meta.textContent = `${missingGpsAttachments.join("、")} 需靠 OCR 或手動補地點。`;
+
+    item.append(title, meta);
+    locationList.append(item);
   }
 }
 
@@ -285,6 +347,7 @@ function applyDraftToForm(draft) {
   }
 
   importedAttachments = Array.isArray(draft.attachments) ? draft.attachments : [];
+  importedLocationAssistance = draft.locationAssistance || null;
   selectedFiles = [];
   fileInput.value = "";
   renderFiles();
@@ -331,6 +394,7 @@ function resetDraft() {
   form.reset();
   selectedFiles = [];
   importedAttachments = [];
+  importedLocationAssistance = null;
   fileInput.value = "";
   localStorage.removeItem(STORAGE_KEY);
   renderFiles();
@@ -341,6 +405,7 @@ function resetDraft() {
 fileInput.addEventListener("change", () => {
   selectedFiles = Array.from(fileInput.files || []);
   importedAttachments = [];
+  importedLocationAssistance = null;
   renderFiles();
   handleInputChange();
 });
@@ -353,5 +418,15 @@ form.addEventListener("input", handleInputChange);
 form.addEventListener("change", handleInputChange);
 downloadButton.addEventListener("click", downloadDraft);
 resetButton.addEventListener("click", resetDraft);
+
+window.taiwanBestView = {
+  loadDraft(draft) {
+    applyDraftToForm(draft);
+    renderPreview();
+  },
+  currentDraft() {
+    return createCaseDraft();
+  },
+};
 
 restoreDraft();

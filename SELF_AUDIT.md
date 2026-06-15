@@ -25,13 +25,15 @@ Observed output:
 - Wrote `draft.json`
 - Wrote `processing-report.json`
 - Derived occurred-at candidate: `2026-06-12T15:32:11+08:00`
+- Generated one GPS-based location candidate from `IMG_2631.HEIC`
+- Listed `IMG_2630.HEIC` as missing GPS
 
 Metadata evidence:
 
 - `IMG_2630.jpg` contains JPEG EXIF date `2026:06:12 15:32:11`
 - `IMG_2631.jpg` contains JPEG EXIF date `2026:06:12 15:36:49`
 - `IMG_2630.jpg` does not contain GPS in the converted JPG
-- `IMG_2631.jpg` contains GPS in the converted JPG
+- `IMG_2631.jpg` contains GPS in the converted JPG: `25.022475, 121.426317`
 - Verification source: local JPEG EXIF parser, without `exiftool`
 
 ## MVP Plan Status
@@ -88,7 +90,14 @@ Remaining:
 
 ### Phase 3: Location Assistance
 
-Status: not implemented
+Status: started
+
+Evidence:
+
+- `scripts/lib/location-candidates.mjs` generates GPS-based candidates from converted JPG EXIF
+- `draft.json` records `locationAssistance`
+- `processing-report.json` records the generated GPS candidate and missing-GPS attachments
+- Frontend has a `地點候選` panel for imported drafts
 
 Remaining:
 
@@ -138,6 +147,7 @@ Remaining:
 
 ```sh
 npm run check
+npm run verify:test-files
 npm run create:case -- test-files --jurisdiction taipei
 node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
 find cases/case-20260615T045149/converted -maxdepth 1 -type f -exec file {} \;
