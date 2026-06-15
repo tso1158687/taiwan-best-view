@@ -1,6 +1,7 @@
 const STORAGE_KEY = "taiwanBestViewDraft";
 const MAX_FILES = 5;
 const MAX_TOTAL_BYTES = 80 * 1024 * 1024;
+const HEIC_EXTENSIONS = new Set(["heic", "heif"]);
 const TAIPEI_ALLOWED_EXTENSIONS = new Set([
   "jpeg",
   "jpg",
@@ -65,10 +66,42 @@ function formatBytes(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function replaceExtension(fileName, extension) {
+  const lastDot = fileName.lastIndexOf(".");
+  const baseName = lastDot >= 0 ? fileName.slice(0, lastDot) : fileName;
+  return `${baseName}.${extension}`;
+}
+
+function createAttachmentSummary(file, jurisdiction) {
+  const originalExtension = getFileExtension(file.name);
+  const needsConversion = HEIC_EXTENSIONS.has(originalExtension);
+  const submissionExtension = needsConversion ? "jpg" : originalExtension;
+  const allowedExtensions =
+    jurisdiction === "new_taipei"
+      ? NEW_TAIPEI_ALLOWED_EXTENSIONS
+      : TAIPEI_ALLOWED_EXTENSIONS;
+
+  return {
+    originalName: file.name,
+    submissionName: needsConversion ? replaceExtension(file.name, "jpg") : file.name,
+    originalExtension,
+    submissionExtension,
+    size: file.size,
+    type: file.type || "unknown",
+    needsConversion,
+    conversionStatus: needsConversion ? "pending" : "not_required",
+    exifStatus: needsConversion ? "pending" : "not_checked",
+    acceptedByOfficial: allowedExtensions.has(submissionExtension),
+  };
+}
+
 function createCaseDraft() {
   const data = new FormData(form);
+  const jurisdiction = data.get("jurisdiction");
+  const attachments = selectedFiles.map((file) => createAttachmentSummary(file, jurisdiction));
+
   return {
-    jurisdiction: data.get("jurisdiction"),
+    jurisdiction,
     violationType: data.get("violationType"),
     plate: String(data.get("plate") || "").trim().toUpperCase(),
     occurredAt: toTaiwanIsoString(data.get("occurredAt")),
@@ -77,13 +110,9 @@ function createCaseDraft() {
     addressNote: String(data.get("addressNote") || "").trim(),
     fact: String(data.get("fact") || "").trim(),
     description: String(data.get("description") || "").trim(),
-    files: selectedFiles.map((file) => file.name),
-    fileSummary: selectedFiles.map((file) => ({
-      name: file.name,
-      size: file.size,
-      type: file.type || "unknown",
-      extension: getFileExtension(file.name),
-    })),
+    files: attachments.map((attachment) => attachment.submissionName),
+    originalFiles: attachments.map((attachment) => attachment.originalName),
+    attachments,
     status: data.get("status"),
     updatedAt: new Date().toISOString(),
   };
@@ -91,10 +120,6 @@ function createCaseDraft() {
 
 function validateDraft(draft) {
   const errors = [];
-  const allowedExtensions =
-    draft.jurisdiction === "new_taipei"
-      ? NEW_TAIPEI_ALLOWED_EXTENSIONS
-      : TAIPEI_ALLOWED_EXTENSIONS;
   const totalBytes = selectedFiles.reduce((sum, file) => sum + file.size, 0);
 
   if (!draft.plate) errors.push("請填車號");
@@ -107,10 +132,14 @@ function validateDraft(draft) {
   if (selectedFiles.length > MAX_FILES) errors.push("附件最多 5 個檔案");
   if (totalBytes > MAX_TOTAL_BYTES) errors.push("附件總容量不可超過 80MB");
 
-  for (const file of selectedFiles) {
-    const extension = getFileExtension(file.name);
-    if (!allowedExtensions.has(extension)) {
-      errors.push(`${file.name} 不符合目前縣市允許的副檔名`);
+  for (const attachment of draft.attachments) {
+    if (attachment.needsConversion) {
+      errors.push(`${attachment.originalName} 需先轉成 JPG 並確認 EXIF`);
+      continue;
+    }
+
+    if (!attachment.acceptedByOfficial) {
+      errors.push(`${attachment.originalName} 不符合目前縣市允許的副檔名`);
     }
   }
 
@@ -137,9 +166,21 @@ function renderFiles() {
   fileSummary.textContent = `${selectedFiles.length} 個附件，總計 ${formatBytes(totalBytes)}`;
 
   for (const file of selectedFiles) {
+    const attachment = createAttachmentSummary(file, form.elements.jurisdiction.value);
     const item = fileItemTemplate.content.firstElementChild.cloneNode(true);
     item.querySelector(".file-name").textContent = file.name;
     item.querySelector(".file-meta").textContent = formatBytes(file.size);
+
+    const badge = item.querySelector(".file-badge");
+    if (attachment.needsConversion) {
+      badge.textContent = "需轉 JPG";
+    } else if (attachment.acceptedByOfficial) {
+      badge.textContent = "可送件格式";
+      badge.classList.add("is-ready");
+    } else {
+      badge.textContent = "不支援";
+    }
+
     fileList.append(item);
   }
 }
@@ -170,6 +211,7 @@ function persistDraft() {
 }
 
 function handleInputChange() {
+  renderFiles();
   renderPreview();
   persistDraft();
 }

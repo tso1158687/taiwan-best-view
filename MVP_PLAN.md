@@ -15,6 +15,7 @@
 - 編輯行政區、路段、補充地點
 - 編輯違規事實與說明
 - 儲存草稿 JSON
+- 偵測 HEIC/HEIF 附件並提示需先轉成 JPG
 
 建議資料格式：
 
@@ -30,9 +31,39 @@
   "fact": "違規停車",
   "description": "車輛停放於人行道，妨礙行人通行",
   "files": ["photo1.jpg", "photo2.jpg"],
+  "attachments": [
+    {
+      "originalName": "IMG_1234.HEIC",
+      "submissionName": "IMG_1234.jpg",
+      "originalExtension": "heic",
+      "submissionExtension": "jpg",
+      "needsConversion": true,
+      "conversionStatus": "pending",
+      "exifStatus": "pending"
+    }
+  ],
   "status": "draft"
 }
 ```
+
+## 第 1.5 階段：附件前處理與 HEIC 轉檔
+
+iPhone 常產生 HEIC/HEIF 照片，但台北市與新北市網站不接受這類格式。附件模組需在進入官方表單前完成轉檔與 EXIF 保留檢查。
+
+必要功能：
+
+- 偵測 `.heic` / `.heif`
+- 將 HEIC/HEIF 轉成 JPG 作為送件檔
+- 保留或重新寫入原始 EXIF metadata
+- 驗證轉檔後仍有 `DateTimeOriginal` 與 GPS 欄位候選
+- 在草稿中同時記錄原始檔與送件檔
+- UI 顯示轉檔狀態：待轉檔 / 已轉檔 / EXIF 已驗證 / EXIF 需人工確認
+
+建議本機工具策略：
+
+- macOS 可先用 `sips` 進行 HEIC 到 JPG 轉檔
+- 建議搭配 `exiftool` 複製與驗證 EXIF
+- 若缺少 `exiftool`，系統可轉檔但必須標示 EXIF 未驗證，不能直接視為可送件
 
 ## 第二階段：照片解析
 
@@ -40,6 +71,7 @@
 
 功能：
 
+- 讀取轉檔前後附件 metadata
 - 讀取 EXIF DateTimeOriginal 作為違規時間候選
 - 讀取 EXIF GPS 作為地點候選
 - OCR 車牌
@@ -134,9 +166,11 @@ GPS 可能飄移，所以地點模組不要只相信座標。
 
 1. 本機草稿 JSON schema
 2. 照片上傳與檔案檢查
-3. EXIF 時間解析
-4. 手動確認頁
-5. 台北市 Playwright 填表 prototype
-6. 新北市 Playwright 填表 prototype
-7. OCR 車牌與地點候選
-8. 案件紀錄與查詢資料保存
+3. HEIC/HEIF 偵測與 JPG 轉檔管線
+4. EXIF 保留驗證
+5. EXIF 時間解析
+6. 手動確認頁
+7. 台北市 Playwright 填表 prototype
+8. 新北市 Playwright 填表 prototype
+9. OCR 車牌與地點候選
+10. 案件紀錄與查詢資料保存

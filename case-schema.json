@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taiwan-best-view.local/case-schema.json",
+  "title": "Taiwan Best View Case Draft",
+  "type": "object",
+  "required": [
+    "jurisdiction",
+    "violationType",
+    "plate",
+    "occurredAt",
+    "district",
+    "road",
+    "fact",
+    "description",
+    "files",
+    "attachments",
+    "status"
+  ],
+  "properties": {
+    "jurisdiction": {
+      "type": "string",
+      "enum": ["taipei", "new_taipei"]
+    },
+    "violationType": {
+      "type": "string",
+      "enum": ["illegal_parking"]
+    },
+    "plate": {
+      "type": "string"
+    },
+    "occurredAt": {
+      "type": "string",
+      "description": "Taiwan local timestamp with +08:00 offset."
+    },
+    "district": {
+      "type": "string"
+    },
+    "road": {
+      "type": "string"
+    },
+    "addressNote": {
+      "type": "string"
+    },
+    "fact": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "files": {
+      "type": "array",
+      "description": "Submission-ready file names.",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "originalName",
+          "submissionName",
+          "originalExtension",
+          "submissionExtension",
+          "size",
+          "type",
+          "needsConversion",
+          "conversionStatus",
+          "exifStatus",
+          "acceptedByOfficial"
+        ],
+        "properties": {
+          "originalName": {
+            "type": "string"
+          },
+          "submissionName": {
+            "type": "string"
+          },
+          "originalExtension": {
+            "type": "string"
+          },
+          "submissionExtension": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "type": {
+            "type": "string"
+          },
+          "needsConversion": {
+            "type": "boolean"
+          },
+          "conversionStatus": {
+            "type": "string",
+            "enum": ["not_required", "pending", "converted", "failed"]
+          },
+          "exifStatus": {
+            "type": "string",
+            "enum": ["not_checked", "pending", "preserved", "partial", "missing"]
+          },
+          "acceptedByOfficial": {
+            "type": "boolean"
+          }
+        }
+      },
+      "maxItems": 5
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "ready_for_review", "submitted"]
+    },
+    "updatedAt": {
+      "type": "string"
+    }
+  }
+}

@@ -90,9 +90,10 @@
           <fieldset>
             <legend>附件</legend>
             <label class="file-drop">
-              <input id="fileInput" name="files" type="file" accept="image/jpeg,image/png,image/bmp,image/tiff,video/quicktime,video/x-ms-wmv,video/x-msvideo,video/mp4,video/3gpp,video/mp2t,.gif,.flv,.mpeg,.mkv,.zip,.rar" multiple>
+              <input id="fileInput" name="files" type="file" accept="image/jpeg,image/png,image/bmp,image/tiff,image/heic,image/heif,video/quicktime,video/x-ms-wmv,video/x-msvideo,video/mp4,video/3gpp,video/mp2t,.heic,.heif,.gif,.flv,.mpeg,.mkv,.zip,.rar" multiple>
               <span>選擇 1 到 5 個照片或影片</span>
             </label>
+            <p class="helper-text">HEIC/HEIF 會標示為需先轉成 JPG，並在送件前檢查 EXIF 是否保留。</p>
             <div id="fileSummary" class="file-summary">尚未選擇附件</div>
             <ul id="fileList" class="file-list" aria-live="polite"></ul>
           </fieldset>
@@ -110,7 +111,10 @@
 
     <template id="fileItemTemplate">
       <li>
-        <span class="file-name"></span>
+        <span>
+          <span class="file-name"></span>
+          <span class="file-badge"></span>
+        </span>
         <span class="file-meta"></span>
       </li>
     </template>
