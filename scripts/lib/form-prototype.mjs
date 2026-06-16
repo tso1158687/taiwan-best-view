@@ -1,5 +1,17 @@
 import { readFile } from "node:fs/promises";
-import { commandExists } from "./system.mjs";
+import { createRequire } from "node:module";
+import { validateSelectorManifest } from "./official-selector-manifests.mjs";
+
+const require = createRequire(import.meta.url);
+
+function packageAvailable(packageName) {
+  try {
+    require.resolve(packageName);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function manualStopIds(plan) {
   return (plan.steps || [])
@@ -30,7 +42,8 @@ export async function loadAutomationPlan(planPath) {
 }
 
 export async function createPrototypeRun({ plan, allowNetwork = false }) {
-  const playwrightAvailable = await commandExists("npx");
+  const playwrightAvailable = packageAvailable("playwright");
+  const selectorValidation = validateSelectorManifest(plan.jurisdiction);
   const missingData = [
     ...(plan.missingCaseFields || []),
     ...(plan.missingReporterFields || []),
@@ -48,6 +61,7 @@ export async function createPrototypeRun({ plan, allowNetwork = false }) {
     finalSubmit: false,
     captchaBypass: false,
     emailBypass: false,
+    selectorValidation,
     readyStepsBeforeFirstHumanStop: readyStepsBeforeHumanStop(plan),
     manualStopIds: manualStopIds(plan),
     blockedSteps: blockedSteps(plan),
@@ -70,6 +84,9 @@ export async function createPrototypeRun({ plan, allowNetwork = false }) {
   result.status = "ready_for_guarded_browser";
   result.notes.push("Plan is ready for a guarded Playwright run up to the first human verification stop.");
   result.notes.push("Implementation must stop before Email/CAPTCHA/declarations/final submit.");
-  result.notes.push("Playwright is optional in this repository; install it before enabling a live guarded run.");
+  if (!playwrightAvailable) {
+    result.status = "playwright_missing";
+    result.notes.push("Install Playwright before enabling a live guarded run.");
+  }
   return result;
 }
