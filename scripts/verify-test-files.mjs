@@ -41,6 +41,7 @@ async function main() {
   assert(report.occurredAtCandidate === "2026-06-12T15:32:11+08:00", "Unexpected occurred-at candidate.");
   assert(report.locationAssistance.status === "needs_review", "Expected location assistance to need review.");
   assert(report.locationAssistance.candidates.length >= 1, "Expected at least one GPS candidate.");
+  assert(["ok", "unavailable"].includes(report.locationAssistance.reverseGeocodeStatus), "Expected reverse geocode to be attempted for GPS candidates.");
   assert(report.locationAssistance.missingGpsAttachments.includes("IMG_2630.HEIC"), "Expected IMG_2630.HEIC to be listed as missing GPS.");
   assert(report.photoAnalysis.status === "ok", "Expected OCR photo analysis to succeed.");
   assert(report.photoAnalysis.plateCandidates.length >= 1, "Expected at least one plate candidate.");
@@ -133,6 +134,10 @@ async function main() {
     caseDirectory: report.caseDirectory,
     occurredAtCandidate: report.occurredAtCandidate,
     locationCandidates: report.locationAssistance.candidates.length,
+    reverseGeocodeStatus: report.locationAssistance.reverseGeocodeStatus,
+    reverseGeocodeLabels: report.locationAssistance.candidates
+      .map((candidate) => candidate.addressLabel)
+      .filter(Boolean),
     missingGpsAttachments: report.locationAssistance.missingGpsAttachments,
     plateCandidates: report.photoAnalysis.plateCandidates.map((candidate) => candidate.text),
     locationTextCandidates: report.photoAnalysis.locationTextCandidates.map((candidate) => candidate.text),

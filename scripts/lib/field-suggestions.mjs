@@ -12,6 +12,20 @@ function uniqueByValue(items) {
   return unique;
 }
 
+function reverseGeocodeSuggestions(locationAssistance, key, field) {
+  return (locationAssistance?.candidates || [])
+    .map((candidate) => candidate.reverseGeocode?.[key])
+    .filter(Boolean)
+    .map((value) => ({
+      field,
+      value,
+      source: "reverse_geocode",
+      confidence: 0.55,
+      evidence: "EXIF GPS reverse geocode",
+      requiresReview: true,
+    }));
+}
+
 export function createFieldSuggestions({ photoAnalysis, locationAssistance }) {
   const plate = uniqueByValue((photoAnalysis?.plateCandidates || []).map((candidate) => ({
     field: "plate",
@@ -33,7 +47,9 @@ export function createFieldSuggestions({ photoAnalysis, locationAssistance }) {
     })),
     ...(locationAssistance?.candidates || []).map((candidate) => ({
       field: "addressNote",
-      value: `GPS 候選 ${candidate.label}`,
+      value: candidate.reverseGeocode?.status === "ok" && candidate.addressLabel
+        ? `GPS 反查 ${candidate.addressLabel}`
+        : `GPS 候選 ${candidate.label}`,
       source: "exif_gps",
       confidence: 0.5,
       evidence: candidate.evidenceFiles.join(", "),
@@ -42,21 +58,27 @@ export function createFieldSuggestions({ photoAnalysis, locationAssistance }) {
     })),
   ]);
 
-  const road = uniqueByValue((photoAnalysis?.locationTextCandidates || [])
-    .filter((candidate) => /[路街巷弄]/.test(candidate.text))
-    .map((candidate) => ({
-      field: "road",
-      value: candidate.text,
-      source: "ocr_location_text",
-      confidence: candidate.confidence,
-      evidence: candidate.text,
-      requiresReview: true,
-    })));
+  const road = uniqueByValue([
+    ...(photoAnalysis?.locationTextCandidates || [])
+      .filter((candidate) => /[路街巷弄]/.test(candidate.text))
+      .map((candidate) => ({
+        field: "road",
+        value: candidate.text,
+        source: "ocr_location_text",
+        confidence: candidate.confidence,
+        evidence: candidate.text,
+        requiresReview: true,
+      })),
+    ...reverseGeocodeSuggestions(locationAssistance, "thoroughfare", "road"),
+  ]);
+
+  const district = uniqueByValue(reverseGeocodeSuggestions(locationAssistance, "subLocality", "district"));
 
   return {
     plate,
+    district,
     road,
     addressNote,
-    status: plate.length > 0 || road.length > 0 || addressNote.length > 0 ? "needs_review" : "empty",
+    status: plate.length > 0 || district.length > 0 || road.length > 0 || addressNote.length > 0 ? "needs_review" : "empty",
   };
 }

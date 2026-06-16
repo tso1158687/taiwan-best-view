@@ -5,6 +5,7 @@ import { fileSize, pathExists } from "./lib/system.mjs";
 import { IMAGE_EXTENSIONS, isHeic, readSipsMetadata, sipsDateToTaiwanIso } from "./lib/metadata.mjs";
 import { convertHeicOne } from "./lib/heic-conversion.mjs";
 import { createLocationCandidates } from "./lib/location-candidates.mjs";
+import { enrichLocationCandidatesWithReverseGeocode } from "./lib/reverse-geocode.mjs";
 import { analyzePhotos } from "./lib/photo-analysis.mjs";
 import { createFieldSuggestions } from "./lib/field-suggestions.mjs";
 
@@ -150,7 +151,7 @@ async function main() {
   for (const input of inputs) {
     attachments.push(await processOne(input, caseDirectory));
   }
-  const locationAssistance = createLocationCandidates(attachments);
+  const locationAssistance = await enrichLocationCandidatesWithReverseGeocode(createLocationCandidates(attachments));
   const photoAnalysis = await analyzePhotos(attachments.map((attachment) => attachment.submissionPath));
   const fieldSuggestions = createFieldSuggestions({ photoAnalysis, locationAssistance });
 
@@ -192,6 +193,7 @@ async function main() {
       resultCount: photoAnalysis.results.length,
       reason: photoAnalysis.reason,
     },
+    reverseGeocodeStatus: locationAssistance.reverseGeocodeStatus,
     attachments: attachments.map((attachment) => ({
       originalName: attachment.originalName,
       submissionName: attachment.submissionName,

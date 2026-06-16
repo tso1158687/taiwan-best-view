@@ -26,6 +26,7 @@ Observed output:
 - Wrote `processing-report.json`
 - Derived occurred-at candidate: `2026-06-12T15:32:11+08:00`
 - Generated one GPS-based location candidate from `IMG_2631.HEIC`
+- Attempted macOS CoreLocation reverse geocoding for the GPS candidate
 - Listed `IMG_2630.HEIC` as missing GPS
 - Extracted OCR text candidates with Apple Vision
 - Extracted plate candidates including `3999YG` / `3999-B`
@@ -47,6 +48,7 @@ Metadata evidence:
 - Original HEIC metadata is preserved in draft sidecar data
 - `IMG_2630.HEIC` does not contain GPS in sidecar metadata
 - `IMG_2631.HEIC` contains GPS in sidecar metadata: `25.022475, 121.426317`
+- CoreLocation reverse geocoding was attempted for `25.022475, 121.426317` and returned `unavailable` / `timeout` in the latest verification run, so the workflow correctly retained coordinate/map candidates instead of inventing an address
 - Verification source: QuickLook image rendering plus local JPEG EXIF sidecar parser, without `exiftool`
 
 ## MVP Plan Status
@@ -111,16 +113,17 @@ Status: started
 Evidence:
 
 - `scripts/lib/location-candidates.mjs` generates GPS-based candidates from sidecar metadata
+- `scripts/lib/reverse-geocode.mjs` and `scripts/reverse-geocode.swift` attempt CoreLocation reverse geocoding for GPS candidates
 - `draft.json` records `locationAssistance`
 - `processing-report.json` records the generated GPS candidate and missing-GPS attachments
+- Latest verification confirmed `reverseGeocodeStatus: "unavailable"` and kept `GPS 候選 25.022475, 121.426317` as a review-only suggestion
 - Frontend has a `地點候選` panel for imported drafts
 - Frontend has a `照片線索` panel and `欄位建議` panel for imported drafts
 
 Remaining:
 
-- Reverse geocoding
-- Road/intersection candidates
-- OCR-based location clues
+- Reverse geocoding can still be unavailable or timeout depending on Apple service/network state
+- Road/intersection candidates still require a reliable map/geocoder result or manual input
 - Confirmed frequent locations
 - Manual map/location candidate UI
 
@@ -234,4 +237,4 @@ node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
 find cases/case-20260616T024545/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
-All listed commands completed successfully by the 2026-06-17 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier and case-record file checks used `cases/case-20260616T160849`; the latest live official preflight reports were written to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json`.
+All listed commands completed successfully by the 2026-06-17 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260616T163004`; the latest case-record file checks used `cases/case-20260616T160849`; the latest live official preflight reports were written to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json`.

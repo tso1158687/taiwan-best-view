@@ -8,6 +8,7 @@ Taiwan Best View is a local-first helper for preparing Taiwan traffic violation 
 - Converts iPhone HEIC/HEIF photos to official-site-compatible PNG files.
 - Preserves original photo metadata in draft sidecar data for time and GPS review.
 - Extracts EXIF time, GPS candidates, OCR plate candidates, and location text clues.
+- Attempts macOS CoreLocation reverse geocoding for GPS candidates when available.
 - Builds submission packets for Taipei and New Taipei.
 - Validates official-site selector manifests and guarded automation stop points.
 - Runs Playwright fixture fills locally without contacting official websites.
@@ -92,7 +93,7 @@ npm run verify:test-files
 ## Current Limits
 
 - The generated PNG submission files are visually rendered and metadata is preserved in draft sidecar data. Full EXIF embedding into PNG/JPEG still requires a future `exiftool` integration.
-- GPS is only a starting point. The exact district, road, address note, and direction must be confirmed by the user.
+- GPS and reverse geocoding are only starting points. If Apple CoreLocation times out or returns no placemark, the tool keeps coordinate/map candidates and requires manual confirmation.
 - Live official-site automation is guarded and should not proceed until real case data and reporter profile fields are complete.
 - Taipei's official SPA may time out in headless Playwright even when static resources are reachable; use `official:preflight` as a diagnostic rather than a submission path.
 - Final submission remains manual.
