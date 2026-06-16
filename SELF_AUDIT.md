@@ -37,6 +37,8 @@ Observed output:
 - Generated a New Taipei submission packet and dry-run automation plan from the same HEIC test inputs
 - Generated official selector reports for Taipei and New Taipei from public official-site HTML / JavaScript evidence
 - Generated local case records that preserve submission status, automation status, attachment summaries, and manually filled official-case fields
+- Verified local case-record update and case-summary logic for post-submission official case numbers
+- Added `README.md` with installation, verification, safety boundaries, and common workflow commands for public handoff
 
 Metadata evidence:
 
@@ -174,7 +176,7 @@ Remaining:
 
 ### Phase 6: Case Records
 
-Status: started
+Status: CLI workflow verified
 
 Evidence:
 
@@ -182,12 +184,25 @@ Evidence:
 - `draft.json` and `processing-report.json` are generated
 - `scripts/lib/case-records.mjs` creates a local record with workflow status, official URL, attachment summary, manual stop IDs, and blank fields for official case number / lookup password / submitted time
 - `scripts/write-case-record.mjs` writes `case-record.json` next to the draft
-- Verification confirmed `caseRecordStatus: "needs_missing_data"` and preserved final-submit as a human stop
+- `scripts/update-case-record.mjs` updates official case number, lookup password, submitted time, correction status, and local/submission statuses after manual official submission
+- `scripts/list-cases.mjs` reads local `case-record.json` files and outputs a case history summary
+- Verification confirmed `caseRecordStatus: "needs_missing_data"`, `updatedCaseRecordStatus: "submitted_by_user"`, `caseSummaryOfficialCaseNumber: "TP-FIXTURE-0001"`, and preserved final-submit as a human stop
+- File-level check wrote `cases/case-20260616T160849/case-record.json` with `TP-FIXTURE-0001` and generated `cases/case-history.json` containing 6 local case summaries
 
 Remaining:
 
 - Official case number, lookup password, submission time, and correction status still require manual entry after official submission
-- Case history UI is not implemented
+- Case history is available through CLI JSON, not a browser UI
+
+### Public Handoff
+
+Status: ready for repository publication after final commit
+
+Evidence:
+
+- `README.md` documents installation, common commands, safety boundaries, test-files verification, and current limits
+- `.gitignore` excludes `test-files/`, `cases/`, `node_modules/`, and `.DS_Store`
+- No real test photos or generated case folders are staged for version control
 
 ## Verification Commands
 
@@ -201,6 +216,8 @@ npm run prepare:submission -- cases/case-20260616T031513/draft.json
 npm run taipei:dry-run -- cases/case-20260616T031513/submission-packet.json
 npm run fixture:fill -- cases/case-20260616T031513/submission-packet.json --jurisdiction taipei
 npm run fixture:fill -- cases/case-20260616T031513/submission-packet.json --jurisdiction new_taipei
+npm run update:case-record -- cases/case-20260616T160849/case-record.json --case-number TP-FIXTURE-0001 --lookup-password fixture-only --submitted-at 2026-06-16T12:00:00+08:00 --submission-status submitted_by_user --local-status submitted --correction-status none
+npm run list:cases -- cases --json cases/case-history.json
 npm run create:case -- test-files --jurisdiction new_taipei
 npm run prepare:submission -- cases/case-20260616T030331/draft.json
 npm run new-taipei:dry-run -- cases/case-20260616T030331/submission-packet.json
@@ -211,4 +228,4 @@ node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
 find cases/case-20260616T024545/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
-All listed commands completed successfully on 2026-06-16, except where older case IDs are retained as prior evidence. The latest end-to-end verifier and written fixture evidence used `cases/case-20260616T031513`.
+All listed commands completed successfully on 2026-06-16, except where older case IDs are retained as prior evidence. The latest end-to-end verifier and case-record file checks used `cases/case-20260616T160849`.

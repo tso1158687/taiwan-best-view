@@ -38,3 +38,39 @@ export function createCaseRecord({ draft, submissionPacket = null, automationPla
     ],
   };
 }
+
+export function updateCaseRecord(record, updates) {
+  const next = structuredClone(record);
+  next.updatedAt = new Date().toISOString();
+
+  if (updates.localStatus) next.localStatus = updates.localStatus;
+  if (updates.submissionStatus) next.submissionStatus = updates.submissionStatus;
+  if (updates.automationStatus) next.automationStatus = updates.automationStatus;
+
+  next.official = {
+    ...(next.official || {}),
+    ...(updates.official || {}),
+  };
+
+  return next;
+}
+
+export function summarizeCaseRecord(record, caseDirectory = "") {
+  return {
+    caseId: record.caseId || "",
+    caseDirectory,
+    jurisdiction: record.jurisdiction || "",
+    violationType: record.violationType || "",
+    createdAt: record.createdAt || "",
+    updatedAt: record.updatedAt || "",
+    localStatus: record.localStatus || "",
+    submissionStatus: record.submissionStatus || "",
+    automationStatus: record.automationStatus || "",
+    officialCaseNumber: record.official?.caseNumber || "",
+    submittedAt: record.official?.submittedAt || "",
+    correctionStatus: record.official?.correctionStatus || "",
+    attachmentCount: record.attachmentSummary?.length || 0,
+    missingCount: record.missing?.length || 0,
+    requiredHumanStopCount: record.requiredHumanStops?.length || 0,
+  };
+}

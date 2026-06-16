@@ -8,6 +8,7 @@ import { createTaipeiAutomationPlan } from "./lib/taipei-automation-plan.mjs";
 import { createPrototypeRun } from "./lib/form-prototype.mjs";
 import { createNewTaipeiAutomationPlan } from "./lib/new-taipei-automation-plan.mjs";
 import { createCaseRecord } from "./lib/case-records.mjs";
+import { updateCaseRecord, summarizeCaseRecord } from "./lib/case-records.mjs";
 import { validateSelectorManifest } from "./lib/official-selector-manifests.mjs";
 import { createReviewedPacketForFixture, runFixtureFill } from "./lib/browser-fixture-runner.mjs";
 
@@ -113,6 +114,19 @@ async function main() {
   assert(caseRecord.automationStatus === "blocked_by_missing_data", "Expected case record to mirror automation status.");
   assert(caseRecord.official.caseNumber === "", "Expected official case number to remain manually filled.");
   assert(caseRecord.requiredHumanStops.includes("stop_before_final_submit"), "Expected case record to keep final submit stop.");
+  const submittedRecord = updateCaseRecord(caseRecord, {
+    localStatus: "submitted",
+    submissionStatus: "submitted_by_user",
+    official: {
+      caseNumber: "TP-FIXTURE-0001",
+      lookupPassword: "fixture-only",
+      submittedAt: "2026-06-16T12:00:00+08:00",
+      correctionStatus: "none",
+    },
+  });
+  const caseSummary = summarizeCaseRecord(submittedRecord, report.caseDirectory);
+  assert(caseSummary.officialCaseNumber === "TP-FIXTURE-0001", "Expected case summary to include official case number.");
+  assert(caseSummary.submissionStatus === "submitted_by_user", "Expected case summary to include updated submission status.");
 
   console.log(JSON.stringify({
     ok: true,
@@ -141,6 +155,8 @@ async function main() {
     newTaipeiFixtureFilledFields: newTaipeiFixtureFill.filledFieldCount,
     newTaipeiFixtureUploadedAttachments: newTaipeiFixtureFill.uploadedAttachmentCount,
     caseRecordStatus: caseRecord.submissionStatus,
+    updatedCaseRecordStatus: submittedRecord.submissionStatus,
+    caseSummaryOfficialCaseNumber: caseSummary.officialCaseNumber,
   }, null, 2));
 }
 
