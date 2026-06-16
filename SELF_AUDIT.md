@@ -1,6 +1,6 @@
 # Self Audit
 
-Audit date: 2026-06-16
+Audit date: 2026-06-17
 
 ## Test Inputs
 
@@ -139,11 +139,13 @@ Evidence:
 - `scripts/taipei-prototype.mjs` writes `taipei-prototype-run.json` and refuses to contact the official site unless required data is complete and `--allow-network` is explicitly provided
 - `scripts/lib/official-selector-manifests.mjs` records Taipei route, API, field, attachment, and human-stop selectors from the official Vue bundle observed on 2026-06-16
 - `scripts/inspect-official-selectors.mjs taipei` validates 17 Taipei field locators and 3 human stop boundaries
+- `scripts/live-official-preflight.mjs taipei --allow-network` performs a read-only official-site preflight that does not fill data, upload files, click verification controls, or submit forms
 - `scripts/run-fixture-fill.mjs` uses Playwright Chromium against a local official-like fixture to verify browser filling without contacting the official site
 - The dry-run plan is `blocked_by_missing_data` for the current test case because plate, district, road, and reporter fields are still missing
 - The dry-run plan marks Email verification, declarations, and final submit as human-required stop points
 - Verification confirmed `taipeiPrototypeStatus: "blocked_by_missing_data"`, `taipeiSelectorFieldCount: 17`, no external side effects, and no final submit path
 - Verification confirmed `taipeiFixtureFillStatus: "ok"`, `taipeiFixtureFilledFields: 15`, `taipeiFixtureUploadedAttachments: 2`, and no triggered human stop or final submit
+- Live official preflight wrote `cases/taipei-live-preflight.json` with `status: "needs_official_recheck"` because the Taipei SPA timed out in headless Playwright before visible reporter fields became available
 - Latest written Taipei evidence: `cases/case-20260616T031513/taipei-fixture-fill-report.json`, `taipei-automation-plan.json`, and `case-record.json`
 
 Remaining:
@@ -162,11 +164,13 @@ Evidence:
 - `scripts/new-taipei-prototype.mjs` writes `new-taipei-prototype-run.json` and refuses to contact the official site unless required data is complete and `--allow-network` is explicitly provided
 - `scripts/lib/official-selector-manifests.mjs` records New Taipei route, form field, attachment, CAPTCHA, Email, and final-submit selectors from official HTML observed on 2026-06-16
 - `scripts/inspect-official-selectors.mjs new_taipei` validates 20 New Taipei field locators and 4 human stop boundaries
+- `scripts/live-official-preflight.mjs new_taipei --allow-network` performs a read-only official-site preflight that does not fill data, upload files, click verification controls, or submit forms
 - `scripts/run-fixture-fill.mjs` handles New Taipei's separate `upfile` attachment inputs and verifies browser filling without contacting the official site
 - The New Taipei packet points to `https://tvrs.ntpd.gov.tw/`
 - The plan stops for disclaimer confirmation, CAPTCHA, Email verification, and final submit
 - Verification confirmed `newTaipeiDryRunStatus: "blocked_by_missing_data"`, `newTaipeiPrototypeStatus: "blocked_by_missing_data"`, `newTaipeiDryRunManualStops: 4`, and `newTaipeiSelectorFieldCount: 20`
 - Verification confirmed `newTaipeiFixtureFillStatus: "ok"`, `newTaipeiFixtureFilledFields: 19`, `newTaipeiFixtureUploadedAttachments: 2`, and no triggered human stop or final submit
+- Live official preflight wrote `cases/new-taipei-live-preflight.json` with `status: "ok"`, 20 present selectors, and no missing selectors
 - Latest written New Taipei evidence: `cases/case-20260616T031513/new-taipei-fixture-fill-report.json`
 
 Remaining:
@@ -211,6 +215,8 @@ npm run check
 npm run verify:test-files
 npm run inspect:selectors -- taipei
 npm run inspect:selectors -- new_taipei
+npm run official:preflight -- taipei --allow-network --json cases/taipei-live-preflight.json
+npm run official:preflight -- new_taipei --allow-network --json cases/new-taipei-live-preflight.json
 npm run create:case -- test-files --jurisdiction taipei
 npm run prepare:submission -- cases/case-20260616T031513/draft.json
 npm run taipei:dry-run -- cases/case-20260616T031513/submission-packet.json
@@ -228,4 +234,4 @@ node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
 find cases/case-20260616T024545/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
-All listed commands completed successfully on 2026-06-16, except where older case IDs are retained as prior evidence. The latest end-to-end verifier and case-record file checks used `cases/case-20260616T160849`.
+All listed commands completed successfully by the 2026-06-17 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier and case-record file checks used `cases/case-20260616T160849`; the latest live official preflight reports were written to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json`.

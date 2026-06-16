@@ -59,6 +59,15 @@ npm run taipei:dry-run -- cases/<case-id>/submission-packet.json
 npm run new-taipei:dry-run -- cases/<case-id>/submission-packet.json
 ```
 
+Run read-only live official-site preflights:
+
+```sh
+npm run official:preflight -- taipei --allow-network --json cases/taipei-live-preflight.json
+npm run official:preflight -- new_taipei --allow-network --json cases/new-taipei-live-preflight.json
+```
+
+These preflights open official websites and check visible selectors. They do not fill data, upload files, click verification controls, or submit forms.
+
 Run local browser fixture fills:
 
 ```sh
@@ -85,4 +94,5 @@ npm run verify:test-files
 - The generated PNG submission files are visually rendered and metadata is preserved in draft sidecar data. Full EXIF embedding into PNG/JPEG still requires a future `exiftool` integration.
 - GPS is only a starting point. The exact district, road, address note, and direction must be confirmed by the user.
 - Live official-site automation is guarded and should not proceed until real case data and reporter profile fields are complete.
+- Taipei's official SPA may time out in headless Playwright even when static resources are reachable; use `official:preflight` as a diagnostic rather than a submission path.
 - Final submission remains manual.
