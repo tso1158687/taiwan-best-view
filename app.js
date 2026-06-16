@@ -49,6 +49,9 @@ const photoAnalysisState = document.querySelector("#photoAnalysisState");
 const suggestionsPanel = document.querySelector("#suggestionsPanel");
 const suggestionsList = document.querySelector("#suggestionsList");
 const suggestionsState = document.querySelector("#suggestionsState");
+const caseRecordPanel = document.querySelector("#caseRecordPanel");
+const caseRecordList = document.querySelector("#caseRecordList");
+const caseRecordState = document.querySelector("#caseRecordState");
 const saveState = document.querySelector("#saveState");
 const validationState = document.querySelector("#validationState");
 const downloadButton = document.querySelector("#downloadButton");
@@ -59,6 +62,7 @@ let importedAttachments = [];
 let importedLocationAssistance = null;
 let importedPhotoAnalysis = null;
 let importedFieldSuggestions = null;
+let importedCaseRecordView = null;
 
 function toTaiwanIsoString(datetimeLocalValue) {
   if (!datetimeLocalValue) return "";
@@ -245,10 +249,17 @@ function renderFiles() {
 function renderPreview() {
   const draft = createCaseDraft();
   const errors = validateDraft(draft);
-  jsonPreview.textContent = JSON.stringify(draft, null, 2);
+  jsonPreview.textContent = JSON.stringify(importedCaseRecordView || draft, null, 2);
   renderLocationAssistance(draft.locationAssistance);
   renderPhotoAnalysis(draft.photoAnalysis);
   renderFieldSuggestions(draft.fieldSuggestions);
+  renderCaseRecordView(importedCaseRecordView);
+
+  if (importedCaseRecordView) {
+    validationState.textContent = "紀錄檢視";
+    validationState.className = "status-pill";
+    return;
+  }
 
   if (errors.length === 0) {
     validationState.textContent = "可人工確認";
@@ -263,6 +274,7 @@ function renderPreview() {
 
 function suggestionLabel(field) {
   if (field === "plate") return "車號";
+  if (field === "district") return "行政區";
   if (field === "road") return "路段";
   if (field === "addressNote") return "補充地點";
   return field;
@@ -294,7 +306,7 @@ function renderFieldSuggestions(fieldSuggestions) {
   suggestionsState.textContent = "需人工確認";
   suggestionsState.className = "status-pill warning";
 
-  for (const field of ["plate", "road", "addressNote"]) {
+  for (const field of ["plate", "district", "road", "addressNote"]) {
     const suggestions = fieldSuggestions[field] || [];
     if (suggestions.length === 0) continue;
 
@@ -319,6 +331,114 @@ function renderFieldSuggestions(fieldSuggestions) {
     group.append(title, actions);
     suggestionsList.append(group);
   }
+}
+
+function formatJurisdiction(jurisdiction) {
+  if (jurisdiction === "taipei") return "台北市";
+  if (jurisdiction === "new_taipei") return "新北市";
+  return jurisdiction || "未設定";
+}
+
+function formatRecordStatus(status) {
+  const labels = {
+    draft: "草稿",
+    ready_for_review: "待人工確認",
+    submitted: "已送件",
+    not_prepared: "尚未產生送件包",
+    needs_missing_data: "缺少必要資料",
+    blocked_by_missing_data: "缺少資料，已停止",
+    submitted_by_user: "使用者已手動送件",
+    none: "無補正",
+  };
+  return labels[status] || status || "未設定";
+}
+
+function formatDateTime(value) {
+  if (!value) return "未填";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString("zh-TW", { hour12: false });
+}
+
+function isCaseRecord(value) {
+  return Boolean(value && value.schemaVersion && value.official && Array.isArray(value.attachmentSummary));
+}
+
+function isCaseHistory(value) {
+  return Boolean(value && Array.isArray(value.cases));
+}
+
+function createDetail(label, value) {
+  const item = document.createElement("div");
+  const title = document.createElement("span");
+  const content = document.createElement("strong");
+
+  item.className = "case-record-detail";
+  title.textContent = label;
+  content.textContent = value || "未填";
+  item.append(title, content);
+  return item;
+}
+
+function appendCaseRecordCard(record, titleText) {
+  const card = document.createElement("article");
+  const title = document.createElement("div");
+  const details = document.createElement("div");
+
+  card.className = "case-record-card";
+  title.className = "case-record-title";
+  title.textContent = titleText;
+  details.className = "case-record-details";
+
+  details.append(
+    createDetail("縣市", formatJurisdiction(record.jurisdiction)),
+    createDetail("本機狀態", formatRecordStatus(record.localStatus)),
+    createDetail("送件狀態", formatRecordStatus(record.submissionStatus)),
+    createDetail("自動化狀態", formatRecordStatus(record.automationStatus)),
+    createDetail("官方案號", record.official?.caseNumber || record.officialCaseNumber || ""),
+    createDetail("送件時間", formatDateTime(record.official?.submittedAt || record.submittedAt)),
+    createDetail("補正狀態", formatRecordStatus(record.official?.correctionStatus || record.correctionStatus)),
+    createDetail("附件", `${record.attachmentSummary?.length ?? record.attachmentCount ?? 0} 個`),
+    createDetail("缺漏欄位", `${record.missing?.length ?? record.missingCount ?? 0} 個`),
+    createDetail("人工停止點", `${record.requiredHumanStops?.length ?? record.requiredHumanStopCount ?? 0} 個`)
+  );
+
+  if (record.caseDirectory) {
+    details.append(createDetail("本機資料夾", record.caseDirectory));
+  }
+
+  card.append(title, details);
+  caseRecordList.append(card);
+}
+
+function renderCaseRecordView(view) {
+  caseRecordList.textContent = "";
+
+  if (!view) {
+    caseRecordPanel.hidden = true;
+    return;
+  }
+
+  caseRecordPanel.hidden = false;
+
+  if (isCaseHistory(view)) {
+    const cases = view.cases || [];
+    caseRecordState.textContent = `${cases.length} 筆案件`;
+    caseRecordState.className = cases.length > 0 ? "status-pill" : "status-pill warning";
+
+    for (const record of cases) {
+      const title = record.caseId || record.caseDirectory || "未命名案件";
+      appendCaseRecordCard(record, title);
+    }
+    return;
+  }
+
+  caseRecordState.textContent = formatRecordStatus(view.submissionStatus);
+  caseRecordState.className =
+    view.submissionStatus === "submitted_by_user" || view.localStatus === "submitted"
+      ? "status-pill"
+      : "status-pill warning";
+  appendCaseRecordCard(view, view.caseId || "單筆案件紀錄");
 }
 
 function appendTextCandidateItem(titleText, candidates) {
@@ -470,20 +590,34 @@ function applyDraftToForm(draft) {
   importedLocationAssistance = draft.locationAssistance || null;
   importedPhotoAnalysis = draft.photoAnalysis || null;
   importedFieldSuggestions = draft.fieldSuggestions || null;
+  importedCaseRecordView = null;
   selectedFiles = [];
   fileInput.value = "";
   renderFiles();
+}
+
+function importCaseRecordView(view) {
+  importedCaseRecordView = view;
+  selectedFiles = [];
+  fileInput.value = "";
+  renderFiles();
+  renderPreview();
 }
 
 async function importDraft(file) {
   if (!file) return;
 
   try {
-    const draft = JSON.parse(await file.text());
-    applyDraftToForm(draft);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-    renderPreview();
-    saveState.textContent = "已匯入 JSON";
+    const payload = JSON.parse(await file.text());
+    if (isCaseRecord(payload) || isCaseHistory(payload)) {
+      importCaseRecordView(payload);
+      saveState.textContent = isCaseHistory(payload) ? "已匯入案件歷史" : "已匯入案件紀錄";
+    } else {
+      applyDraftToForm(payload);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      renderPreview();
+      saveState.textContent = "已匯入 JSON";
+    }
   } catch {
     validationState.textContent = "JSON 格式無法讀取";
     validationState.className = "status-pill error";
@@ -519,6 +653,7 @@ function resetDraft() {
   importedLocationAssistance = null;
   importedPhotoAnalysis = null;
   importedFieldSuggestions = null;
+  importedCaseRecordView = null;
   fileInput.value = "";
   localStorage.removeItem(STORAGE_KEY);
   renderFiles();
@@ -532,6 +667,7 @@ fileInput.addEventListener("change", () => {
   importedLocationAssistance = null;
   importedPhotoAnalysis = null;
   importedFieldSuggestions = null;
+  importedCaseRecordView = null;
   renderFiles();
   handleInputChange();
 });

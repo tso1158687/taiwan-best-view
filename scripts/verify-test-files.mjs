@@ -128,6 +128,8 @@ async function main() {
   const caseSummary = summarizeCaseRecord(submittedRecord, report.caseDirectory);
   assert(caseSummary.officialCaseNumber === "TP-FIXTURE-0001", "Expected case summary to include official case number.");
   assert(caseSummary.submissionStatus === "submitted_by_user", "Expected case summary to include updated submission status.");
+  const uiVerification = await run("npm", ["run", "verify:ui"]);
+  assert(uiVerification.stdout.includes("\"ok\": true"), "Expected UI fixture verification to pass.");
 
   console.log(JSON.stringify({
     ok: true,
@@ -162,6 +164,7 @@ async function main() {
     caseRecordStatus: caseRecord.submissionStatus,
     updatedCaseRecordStatus: submittedRecord.submissionStatus,
     caseSummaryOfficialCaseNumber: caseSummary.officialCaseNumber,
+    uiFixtureVerification: "ok",
   }, null, 2));
 }
 

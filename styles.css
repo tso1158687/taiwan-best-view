@@ -432,6 +432,49 @@ textarea:focus {
   border-color: var(--accent);
 }
 
+.case-record-list {
+  display: grid;
+  gap: 10px;
+}
+
+.case-record-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.case-record-title {
+  color: var(--ink);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.case-record-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.case-record-detail {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.case-record-detail span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.case-record-detail strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 980px) {
   .workspace {
     grid-template-columns: 1fr;
@@ -468,5 +511,9 @@ textarea:focus {
   .file-list li {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .case-record-details {
+    grid-template-columns: 1fr;
   }
 }

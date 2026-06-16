@@ -13,6 +13,7 @@ Taiwan Best View is a local-first helper for preparing Taiwan traffic violation 
 - Validates official-site selector manifests and guarded automation stop points.
 - Runs Playwright fixture fills locally without contacting official websites.
 - Records local case status, official case number, lookup password, and correction status after manual submission.
+- Imports local case records and case-history JSON into the browser UI for review.
 
 ## Safety Boundaries
 
@@ -84,10 +85,22 @@ npm run update:case-record -- cases/<case-id>/case-record.json --case-number TP1
 npm run list:cases
 ```
 
+To review case history in the browser UI, write a JSON summary and import it with the `匯入 JSON` button:
+
+```sh
+npm run list:cases -- cases --json cases/case-history.json
+```
+
 End-to-end local verification with `test-files/`:
 
 ```sh
 npm run verify:test-files
+```
+
+Browser UI fixture verification:
+
+```sh
+npm run verify:ui
 ```
 
 ## Current Limits

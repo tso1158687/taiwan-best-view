@@ -63,12 +63,13 @@ Evidence:
 - Required fields exist for jurisdiction, violation type, plate, occurred time, district, road, address note, fact, description, attachments, and status
 - JSON preview and JSON download exist
 - JSON import exists
+- Browser UI imports `case-record.json` and `case-history.json` for local case review
 - HEIC/HEIF upload is detected and shown as requiring conversion to an official-site-compatible format
+- Playwright UI fixture verification imports both single-case and case-history JSON files
 
 Remaining:
 
-- Browser-native file import cannot be fully automated in the current browser test tool because file input setting is not exposed
-- User-facing case list/history is not implemented
+- Browser UI reads case history through explicit JSON import; it does not scan the local `cases/` directory directly
 
 ### Phase 1.5: Attachment Preprocessing and HEIC Conversion
 
@@ -119,6 +120,7 @@ Evidence:
 - Latest verification confirmed `reverseGeocodeStatus: "unavailable"` and kept `GPS 候選 25.022475, 121.426317` as a review-only suggestion
 - Frontend has a `地點候選` panel for imported drafts
 - Frontend has a `照片線索` panel and `欄位建議` panel for imported drafts
+- Frontend can apply imported field suggestions for plate, district, road, and address note
 
 Remaining:
 
@@ -183,7 +185,7 @@ Remaining:
 
 ### Phase 6: Case Records
 
-Status: CLI workflow verified
+Status: CLI and imported browser UI workflow verified
 
 Evidence:
 
@@ -194,12 +196,14 @@ Evidence:
 - `scripts/update-case-record.mjs` updates official case number, lookup password, submitted time, correction status, and local/submission statuses after manual official submission
 - `scripts/list-cases.mjs` reads local `case-record.json` files and outputs a case history summary
 - Verification confirmed `caseRecordStatus: "needs_missing_data"`, `updatedCaseRecordStatus: "submitted_by_user"`, `caseSummaryOfficialCaseNumber: "TP-FIXTURE-0001"`, and preserved final-submit as a human stop
+- `index.html` / `app.js` import `case-record.json` and `case-history.json` and display jurisdiction, local/submission/automation status, official case number, submitted time, attachment count, missing count, and human stop count
+- `scripts/verify-ui-fixtures.mjs` verifies browser import rendering for single case record and case history fixtures
 - File-level check wrote `cases/case-20260616T160849/case-record.json` with `TP-FIXTURE-0001` and generated `cases/case-history.json` containing 6 local case summaries
 
 Remaining:
 
 - Official case number, lookup password, submission time, and correction status still require manual entry after official submission
-- Case history is available through CLI JSON, not a browser UI
+- Browser UI case history requires importing generated JSON; direct local directory scanning is intentionally not implemented in the static page
 
 ### Public Handoff
 
@@ -215,6 +219,7 @@ Evidence:
 
 ```sh
 npm run check
+npm run verify:ui
 npm run verify:test-files
 npm run inspect:selectors -- taipei
 npm run inspect:selectors -- new_taipei
@@ -237,4 +242,4 @@ node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
 find cases/case-20260616T024545/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
-All listed commands completed successfully by the 2026-06-17 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260616T163004`; the latest case-record file checks used `cases/case-20260616T160849`; the latest live official preflight reports were written to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json`.
+All listed commands completed successfully by the 2026-06-17 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260616T163821`; the latest case-record file checks used `cases/case-20260616T160849`; the latest UI fixture verification returned `uiFixtureVerification: "ok"`; the latest live official preflight reports were written to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json`.
