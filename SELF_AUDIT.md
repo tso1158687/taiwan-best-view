@@ -19,7 +19,7 @@ npm run create:case -- test-files --jurisdiction taipei
 
 Observed output:
 
-- Created case workspace: `cases/case-20260616T023454`
+- Created case workspace: `cases/case-20260616T024545`
 - Copied original HEIC files to `originals/`
 - Converted submission files to `converted/IMG_2630.png` and `converted/IMG_2631.png`
 - Wrote `draft.json`
@@ -32,6 +32,7 @@ Observed output:
 - Extracted location text candidates including `傳品牛排`
 - Generated field suggestions for plate and address note
 - Generated a Taipei submission packet with official URL, form mapping, attachments, missing fields, and required human stop points
+- Generated a Taipei dry-run automation plan that refuses to proceed when required case or reporter fields are missing
 
 Metadata evidence:
 
@@ -128,6 +129,9 @@ Evidence:
 - The packet maps case date/time, plate parts, district, road, address note, fact, description, and attachments into a stable structure for automation
 - The packet explicitly stops before Email verification, personal-data statements, truthfulness statement, and final submit
 - The packet reports missing reporter profile fields instead of inventing personal data
+- `scripts/taipei-dry-run.mjs` writes `taipei-automation-plan.json` without opening or submitting to the official site
+- The dry-run plan is `blocked_by_missing_data` for the current test case because plate, district, road, and reporter fields are still missing
+- The dry-run plan marks Email verification, declarations, and final submit as human-required stop points
 
 Remaining:
 
@@ -167,9 +171,10 @@ Remaining:
 npm run check
 npm run verify:test-files
 npm run create:case -- test-files --jurisdiction taipei
-npm run prepare:submission -- cases/case-20260616T023454/draft.json
+npm run prepare:submission -- cases/case-20260616T024545/draft.json
+npm run taipei:dry-run -- cases/case-20260616T024545/submission-packet.json
 node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
-find cases/case-20260616T023454/converted -maxdepth 1 -type f -exec file {} \;
+find cases/case-20260616T024545/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
 All listed commands completed successfully on 2026-06-16.

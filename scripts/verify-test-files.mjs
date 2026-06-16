@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { pathExists, run } from "./lib/system.mjs";
 import { readSipsMetadata } from "./lib/metadata.mjs";
 import { createSubmissionPacket } from "./lib/submission-packet.mjs";
+import { createTaipeiAutomationPlan } from "./lib/taipei-automation-plan.mjs";
 
 function assert(condition, message) {
   if (!condition) {
@@ -60,6 +61,11 @@ async function main() {
   assert(packet.missing.includes("case.plate"), "Expected plate to remain missing until human confirmation.");
   assert(packet.missing.includes("reporter.name"), "Expected reporter data to remain missing.");
   assert(packet.official.stopBefore.includes("final_submit"), "Expected final submit stop boundary.");
+  const taipeiPlan = createTaipeiAutomationPlan(packet);
+  assert(taipeiPlan.status === "blocked_by_missing_data", "Expected Taipei dry run to be blocked by missing data.");
+  assert(taipeiPlan.safety.dryRunOnly === true, "Expected Taipei plan to be dry-run only.");
+  assert(taipeiPlan.safety.finalSubmit === false, "Expected Taipei plan to disable final submit.");
+  assert(taipeiPlan.steps.some((item) => item.id === "stop_before_email_verification" && item.requiresHuman), "Expected email verification stop.");
 
   console.log(JSON.stringify({
     ok: true,
@@ -73,6 +79,8 @@ async function main() {
     addressNoteSuggestions: report.fieldSuggestions.addressNote.map((suggestion) => suggestion.value),
     submissionPacketStatus: packet.status,
     submissionPacketMissing: packet.missing,
+    taipeiDryRunStatus: taipeiPlan.status,
+    taipeiDryRunManualStops: taipeiPlan.steps.filter((item) => item.requiresHuman).length,
   }, null, 2));
 }
 
