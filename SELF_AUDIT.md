@@ -33,6 +33,9 @@ Observed output:
 - Generated field suggestions for plate and address note
 - Generated a Taipei submission packet with official URL, form mapping, attachments, missing fields, and required human stop points
 - Generated a Taipei dry-run automation plan that refuses to proceed when required case or reporter fields are missing
+- Generated a Taipei prototype run preflight that refuses to open the official site while required data is missing
+- Generated a New Taipei submission packet and dry-run automation plan from the same HEIC test inputs
+- Generated local case records that preserve submission status, automation status, attachment summaries, and manually filled official-case fields
 
 Metadata evidence:
 
@@ -130,24 +133,33 @@ Evidence:
 - The packet explicitly stops before Email verification, personal-data statements, truthfulness statement, and final submit
 - The packet reports missing reporter profile fields instead of inventing personal data
 - `scripts/taipei-dry-run.mjs` writes `taipei-automation-plan.json` without opening or submitting to the official site
+- `scripts/taipei-prototype.mjs` writes `taipei-prototype-run.json` and refuses to contact the official site unless required data is complete and `--allow-network` is explicitly provided
 - The dry-run plan is `blocked_by_missing_data` for the current test case because plate, district, road, and reporter fields are still missing
 - The dry-run plan marks Email verification, declarations, and final submit as human-required stop points
+- Verification confirmed `taipeiPrototypeStatus: "blocked_by_missing_data"` with no external side effects and no final submit path
 
 Remaining:
 
-- Playwright prototype for Taipei official site form interaction
+- Live Playwright selector mapping for Taipei official site form fields
 - Email verification pause
 - Attachment upload
 - Pre-submit summary and human confirmation
 
 ### Phase 5: New Taipei Semi-Automated Form Filling
 
-Status: not implemented
+Status: started
+
+Evidence:
+
+- `scripts/lib/new-taipei-automation-plan.mjs` creates a guarded New Taipei automation plan from `submission-packet.json`
+- `scripts/new-taipei-dry-run.mjs` writes `new-taipei-automation-plan.json` without opening or submitting to the official site
+- The New Taipei packet points to `https://tvrs.ntpd.gov.tw/`
+- The plan stops for disclaimer confirmation, CAPTCHA, Email verification, and final submit
+- Verification confirmed `newTaipeiDryRunStatus: "blocked_by_missing_data"` and `newTaipeiDryRunManualStops: 4`
 
 Remaining:
 
-- Playwright prototype for New Taipei official site
-- Disclaimer step handling
+- Live Playwright selector mapping for New Taipei official site form fields
 - CAPTCHA and Email verification pause
 - Attachment upload
 - Pre-submit summary and human confirmation
@@ -160,10 +172,14 @@ Evidence:
 
 - Local case workspace structure exists under `cases/<case-id>/`
 - `draft.json` and `processing-report.json` are generated
+- `scripts/lib/case-records.mjs` creates a local record with workflow status, official URL, attachment summary, manual stop IDs, and blank fields for official case number / lookup password / submitted time
+- `scripts/write-case-record.mjs` writes `case-record.json` next to the draft
+- Verification confirmed `caseRecordStatus: "needs_missing_data"` and preserved final-submit as a human stop
 
 Remaining:
 
-- Official case number, lookup password, submission time, correction status, and case history UI are not implemented
+- Official case number, lookup password, submission time, and correction status still require manual entry after official submission
+- Case history UI is not implemented
 
 ## Verification Commands
 
@@ -173,8 +189,14 @@ npm run verify:test-files
 npm run create:case -- test-files --jurisdiction taipei
 npm run prepare:submission -- cases/case-20260616T024545/draft.json
 npm run taipei:dry-run -- cases/case-20260616T024545/submission-packet.json
+npm run taipei:prototype -- cases/case-20260616T025453/taipei-automation-plan.json
+npm run create:case -- test-files --jurisdiction new_taipei
+npm run prepare:submission -- cases/case-20260616T025531/draft.json
+npm run new-taipei:dry-run -- cases/case-20260616T025531/submission-packet.json
+npm run write:case-record -- cases/case-20260616T025453/draft.json cases/case-20260616T025453/submission-packet.json cases/case-20260616T025453/taipei-automation-plan.json
+npm run write:case-record -- cases/case-20260616T025531/draft.json cases/case-20260616T025531/submission-packet.json cases/case-20260616T025531/new-taipei-automation-plan.json
 node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
 find cases/case-20260616T024545/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
-All listed commands completed successfully on 2026-06-16.
+All listed commands completed successfully on 2026-06-16, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260616T025453` for Taipei and a separate `cases/case-20260616T025531` run for New Taipei.

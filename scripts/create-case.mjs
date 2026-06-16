@@ -142,6 +142,7 @@ async function main() {
   }
 
   const caseDirectory = join(resolve("cases"), caseIdFromDate());
+  const caseId = basename(caseDirectory);
   await mkdir(join(caseDirectory, "originals"), { recursive: true });
   await mkdir(join(caseDirectory, "converted"), { recursive: true });
 
@@ -154,6 +155,7 @@ async function main() {
   const fieldSuggestions = createFieldSuggestions({ photoAnalysis, locationAssistance });
 
   const draft = {
+    caseId,
     jurisdiction: options.jurisdiction,
     violationType: "illegal_parking",
     plate: "",
@@ -175,6 +177,7 @@ async function main() {
   };
 
   const report = {
+    caseId,
     caseDirectory,
     inputCount: inputs.length,
     submissionFiles: draft.files,

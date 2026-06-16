@@ -5,6 +5,9 @@ import { pathExists, run } from "./lib/system.mjs";
 import { readSipsMetadata } from "./lib/metadata.mjs";
 import { createSubmissionPacket } from "./lib/submission-packet.mjs";
 import { createTaipeiAutomationPlan } from "./lib/taipei-automation-plan.mjs";
+import { createPrototypeRun } from "./lib/form-prototype.mjs";
+import { createNewTaipeiAutomationPlan } from "./lib/new-taipei-automation-plan.mjs";
+import { createCaseRecord } from "./lib/case-records.mjs";
 
 function assert(condition, message) {
   if (!condition) {
@@ -66,6 +69,24 @@ async function main() {
   assert(taipeiPlan.safety.dryRunOnly === true, "Expected Taipei plan to be dry-run only.");
   assert(taipeiPlan.safety.finalSubmit === false, "Expected Taipei plan to disable final submit.");
   assert(taipeiPlan.steps.some((item) => item.id === "stop_before_email_verification" && item.requiresHuman), "Expected email verification stop.");
+  const taipeiPrototype = await createPrototypeRun({ plan: taipeiPlan, allowNetwork: false });
+  assert(taipeiPrototype.status === "blocked_by_missing_data", "Expected Taipei prototype to refuse missing data.");
+  assert(taipeiPrototype.externalSideEffects === false, "Expected Taipei prototype to avoid external side effects.");
+  assert(taipeiPrototype.finalSubmit === false, "Expected Taipei prototype to disable final submit.");
+
+  const newTaipeiDraft = { ...draft, jurisdiction: "new_taipei" };
+  const newTaipeiPacket = await createSubmissionPacket({ draft: newTaipeiDraft });
+  assert(newTaipeiPacket.official.url === "https://tvrs.ntpd.gov.tw/", "Expected New Taipei official URL.");
+  const newTaipeiPlan = createNewTaipeiAutomationPlan(newTaipeiPacket);
+  assert(newTaipeiPlan.status === "blocked_by_missing_data", "Expected New Taipei dry run to be blocked by missing data.");
+  assert(newTaipeiPlan.steps.some((item) => item.id === "stop_before_disclaimer" && item.requiresHuman), "Expected New Taipei disclaimer stop.");
+  assert(newTaipeiPlan.steps.some((item) => item.id === "stop_before_captcha" && item.requiresHuman), "Expected New Taipei CAPTCHA stop.");
+
+  const caseRecord = createCaseRecord({ draft, submissionPacket: packet, automationPlan: taipeiPlan });
+  assert(caseRecord.submissionStatus === "needs_missing_data", "Expected case record to mirror submission status.");
+  assert(caseRecord.automationStatus === "blocked_by_missing_data", "Expected case record to mirror automation status.");
+  assert(caseRecord.official.caseNumber === "", "Expected official case number to remain manually filled.");
+  assert(caseRecord.requiredHumanStops.includes("stop_before_final_submit"), "Expected case record to keep final submit stop.");
 
   console.log(JSON.stringify({
     ok: true,
@@ -81,6 +102,10 @@ async function main() {
     submissionPacketMissing: packet.missing,
     taipeiDryRunStatus: taipeiPlan.status,
     taipeiDryRunManualStops: taipeiPlan.steps.filter((item) => item.requiresHuman).length,
+    taipeiPrototypeStatus: taipeiPrototype.status,
+    newTaipeiDryRunStatus: newTaipeiPlan.status,
+    newTaipeiDryRunManualStops: newTaipeiPlan.steps.filter((item) => item.requiresHuman).length,
+    caseRecordStatus: caseRecord.submissionStatus,
   }, null, 2));
 }
 
