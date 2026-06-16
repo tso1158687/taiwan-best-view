@@ -137,16 +137,17 @@ Evidence:
 - `scripts/taipei-prototype.mjs` writes `taipei-prototype-run.json` and refuses to contact the official site unless required data is complete and `--allow-network` is explicitly provided
 - `scripts/lib/official-selector-manifests.mjs` records Taipei route, API, field, attachment, and human-stop selectors from the official Vue bundle observed on 2026-06-16
 - `scripts/inspect-official-selectors.mjs taipei` validates 17 Taipei field locators and 3 human stop boundaries
+- `scripts/run-fixture-fill.mjs` uses Playwright Chromium against a local official-like fixture to verify browser filling without contacting the official site
 - The dry-run plan is `blocked_by_missing_data` for the current test case because plate, district, road, and reporter fields are still missing
 - The dry-run plan marks Email verification, declarations, and final submit as human-required stop points
 - Verification confirmed `taipeiPrototypeStatus: "blocked_by_missing_data"`, `taipeiSelectorFieldCount: 17`, no external side effects, and no final submit path
-- Latest written Taipei evidence: `cases/case-20260616T030233/taipei-selector-report.json`, `taipei-automation-plan.json`, `taipei-prototype-run.json`, and `case-record.json`
+- Verification confirmed `taipeiFixtureFillStatus: "ok"`, `taipeiFixtureFilledFields: 15`, `taipeiFixtureUploadedAttachments: 2`, and no triggered human stop or final submit
+- Latest written Taipei evidence: `cases/case-20260616T031513/taipei-fixture-fill-report.json`, `taipei-automation-plan.json`, and `case-record.json`
 
 Remaining:
 
-- Installed Playwright/browser runtime is not present, so live browser filling is not executed in this checkout
 - Live Taipei run still needs user-confirmed complete case data and reporter profile before it can safely open the official site
-- Email verification, attachment upload, pre-submit summary, declarations, and final submit remain human-gated
+- Email verification, pre-submit summary, declarations, and final submit remain human-gated
 
 ### Phase 5: New Taipei Semi-Automated Form Filling
 
@@ -159,16 +160,17 @@ Evidence:
 - `scripts/new-taipei-prototype.mjs` writes `new-taipei-prototype-run.json` and refuses to contact the official site unless required data is complete and `--allow-network` is explicitly provided
 - `scripts/lib/official-selector-manifests.mjs` records New Taipei route, form field, attachment, CAPTCHA, Email, and final-submit selectors from official HTML observed on 2026-06-16
 - `scripts/inspect-official-selectors.mjs new_taipei` validates 20 New Taipei field locators and 4 human stop boundaries
+- `scripts/run-fixture-fill.mjs` handles New Taipei's separate `upfile` attachment inputs and verifies browser filling without contacting the official site
 - The New Taipei packet points to `https://tvrs.ntpd.gov.tw/`
 - The plan stops for disclaimer confirmation, CAPTCHA, Email verification, and final submit
 - Verification confirmed `newTaipeiDryRunStatus: "blocked_by_missing_data"`, `newTaipeiPrototypeStatus: "blocked_by_missing_data"`, `newTaipeiDryRunManualStops: 4`, and `newTaipeiSelectorFieldCount: 20`
-- Latest written New Taipei evidence: `cases/case-20260616T030331/new-taipei-selector-report.json`, `new-taipei-automation-plan.json`, `new-taipei-prototype-run.json`, and `case-record.json`
+- Verification confirmed `newTaipeiFixtureFillStatus: "ok"`, `newTaipeiFixtureFilledFields: 19`, `newTaipeiFixtureUploadedAttachments: 2`, and no triggered human stop or final submit
+- Latest written New Taipei evidence: `cases/case-20260616T031513/new-taipei-fixture-fill-report.json`
 
 Remaining:
 
-- Installed Playwright/browser runtime is not present, so live browser filling is not executed in this checkout
 - Live New Taipei run still needs user-confirmed complete case data and reporter profile before it can safely open the official site
-- CAPTCHA, Email verification, attachment upload, pre-submit summary, and final submit remain human-gated
+- CAPTCHA, Email verification, pre-submit summary, and final submit remain human-gated
 
 ### Phase 6: Case Records
 
@@ -195,17 +197,18 @@ npm run verify:test-files
 npm run inspect:selectors -- taipei
 npm run inspect:selectors -- new_taipei
 npm run create:case -- test-files --jurisdiction taipei
-npm run prepare:submission -- cases/case-20260616T030233/draft.json
-npm run taipei:dry-run -- cases/case-20260616T030233/submission-packet.json
-npm run taipei:prototype -- cases/case-20260616T030233/taipei-automation-plan.json
+npm run prepare:submission -- cases/case-20260616T031513/draft.json
+npm run taipei:dry-run -- cases/case-20260616T031513/submission-packet.json
+npm run fixture:fill -- cases/case-20260616T031513/submission-packet.json --jurisdiction taipei
+npm run fixture:fill -- cases/case-20260616T031513/submission-packet.json --jurisdiction new_taipei
 npm run create:case -- test-files --jurisdiction new_taipei
 npm run prepare:submission -- cases/case-20260616T030331/draft.json
 npm run new-taipei:dry-run -- cases/case-20260616T030331/submission-packet.json
 npm run new-taipei:prototype -- cases/case-20260616T030331/new-taipei-automation-plan.json
-npm run write:case-record -- cases/case-20260616T030233/draft.json cases/case-20260616T030233/submission-packet.json cases/case-20260616T030233/taipei-automation-plan.json
+npm run write:case-record -- cases/case-20260616T031513/draft.json cases/case-20260616T031513/submission-packet.json cases/case-20260616T031513/taipei-automation-plan.json
 npm run write:case-record -- cases/case-20260616T030331/draft.json cases/case-20260616T030331/submission-packet.json cases/case-20260616T030331/new-taipei-automation-plan.json
 node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
 find cases/case-20260616T024545/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
-All listed commands completed successfully on 2026-06-16, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260616T030233`; the latest written Taipei evidence uses `cases/case-20260616T030233`, and the latest written New Taipei evidence uses `cases/case-20260616T030331`.
+All listed commands completed successfully on 2026-06-16, except where older case IDs are retained as prior evidence. The latest end-to-end verifier and written fixture evidence used `cases/case-20260616T031513`.

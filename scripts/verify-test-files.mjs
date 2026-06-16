@@ -9,6 +9,7 @@ import { createPrototypeRun } from "./lib/form-prototype.mjs";
 import { createNewTaipeiAutomationPlan } from "./lib/new-taipei-automation-plan.mjs";
 import { createCaseRecord } from "./lib/case-records.mjs";
 import { validateSelectorManifest } from "./lib/official-selector-manifests.mjs";
+import { createReviewedPacketForFixture, runFixtureFill } from "./lib/browser-fixture-runner.mjs";
 
 function assert(condition, message) {
   if (!condition) {
@@ -76,6 +77,14 @@ async function main() {
   assert(taipeiPrototype.finalSubmit === false, "Expected Taipei prototype to disable final submit.");
   assert(taipeiPrototype.selectorValidation.status === "ok", "Expected Taipei selector manifest to validate.");
   assert(taipeiPrototype.selectorValidation.finalSubmitBlocked === true, "Expected Taipei selector manifest to block final submit.");
+  const taipeiFixtureFill = await runFixtureFill({
+    jurisdiction: "taipei",
+    packet: await createReviewedPacketForFixture(packet),
+  });
+  assert(taipeiFixtureFill.status === "ok", "Expected Taipei local browser fixture fill to pass.");
+  assert(taipeiFixtureFill.uploadedAttachmentCount === 2, "Expected Taipei fixture fill to upload two attachments.");
+  assert(taipeiFixtureFill.finalSubmitTriggered === false, "Expected Taipei fixture fill not to submit.");
+  assert(taipeiFixtureFill.humanStopTriggered === false, "Expected Taipei fixture fill not to trigger human stops.");
 
   const newTaipeiDraft = { ...draft, jurisdiction: "new_taipei" };
   const newTaipeiPacket = await createSubmissionPacket({ draft: newTaipeiDraft });
@@ -90,6 +99,14 @@ async function main() {
   assert(newTaipeiSelectors.finalSubmitBlocked === true, "Expected New Taipei selector manifest to block final submit.");
   assert(newTaipeiPrototype.status === "blocked_by_missing_data", "Expected New Taipei prototype to refuse missing data.");
   assert(newTaipeiPrototype.captchaBypass === false, "Expected New Taipei prototype to disable CAPTCHA bypass.");
+  const newTaipeiFixtureFill = await runFixtureFill({
+    jurisdiction: "new_taipei",
+    packet: await createReviewedPacketForFixture(newTaipeiPacket),
+  });
+  assert(newTaipeiFixtureFill.status === "ok", "Expected New Taipei local browser fixture fill to pass.");
+  assert(newTaipeiFixtureFill.uploadedAttachmentCount === 2, "Expected New Taipei fixture fill to upload two attachments.");
+  assert(newTaipeiFixtureFill.finalSubmitTriggered === false, "Expected New Taipei fixture fill not to submit.");
+  assert(newTaipeiFixtureFill.humanStopTriggered === false, "Expected New Taipei fixture fill not to trigger human stops.");
 
   const caseRecord = createCaseRecord({ draft, submissionPacket: packet, automationPlan: taipeiPlan });
   assert(caseRecord.submissionStatus === "needs_missing_data", "Expected case record to mirror submission status.");
@@ -113,10 +130,16 @@ async function main() {
     taipeiDryRunManualStops: taipeiPlan.steps.filter((item) => item.requiresHuman).length,
     taipeiPrototypeStatus: taipeiPrototype.status,
     taipeiSelectorFieldCount: taipeiPrototype.selectorValidation.fieldCount,
+    taipeiFixtureFillStatus: taipeiFixtureFill.status,
+    taipeiFixtureFilledFields: taipeiFixtureFill.filledFieldCount,
+    taipeiFixtureUploadedAttachments: taipeiFixtureFill.uploadedAttachmentCount,
     newTaipeiDryRunStatus: newTaipeiPlan.status,
     newTaipeiDryRunManualStops: newTaipeiPlan.steps.filter((item) => item.requiresHuman).length,
     newTaipeiPrototypeStatus: newTaipeiPrototype.status,
     newTaipeiSelectorFieldCount: newTaipeiSelectors.fieldCount,
+    newTaipeiFixtureFillStatus: newTaipeiFixtureFill.status,
+    newTaipeiFixtureFilledFields: newTaipeiFixtureFill.filledFieldCount,
+    newTaipeiFixtureUploadedAttachments: newTaipeiFixtureFill.uploadedAttachmentCount,
     caseRecordStatus: caseRecord.submissionStatus,
   }, null, 2));
 }
