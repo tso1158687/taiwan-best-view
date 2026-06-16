@@ -1,6 +1,6 @@
 # Self Audit
 
-Audit date: 2026-06-15
+Audit date: 2026-06-16
 
 ## Test Inputs
 
@@ -19,7 +19,7 @@ npm run create:case -- test-files --jurisdiction taipei
 
 Observed output:
 
-- Created case workspace: `cases/case-20260615T052016`
+- Created case workspace: `cases/case-20260616T023454`
 - Copied original HEIC files to `originals/`
 - Converted submission files to `converted/IMG_2630.png` and `converted/IMG_2631.png`
 - Wrote `draft.json`
@@ -31,6 +31,7 @@ Observed output:
 - Extracted plate candidates including `3999YG` / `3999-B`
 - Extracted location text candidates including `傳品牛排`
 - Generated field suggestions for plate and address note
+- Generated a Taipei submission packet with official URL, form mapping, attachments, missing fields, and required human stop points
 
 Metadata evidence:
 
@@ -118,11 +119,19 @@ Remaining:
 
 ### Phase 4: Taipei Semi-Automated Form Filling
 
-Status: not implemented
+Status: started
+
+Evidence:
+
+- `scripts/prepare-submission.mjs` generates `submission-packet.json` from a case draft
+- The Taipei packet points to `https://prsweb.tcpd.gov.tw/`
+- The packet maps case date/time, plate parts, district, road, address note, fact, description, and attachments into a stable structure for automation
+- The packet explicitly stops before Email verification, personal-data statements, truthfulness statement, and final submit
+- The packet reports missing reporter profile fields instead of inventing personal data
 
 Remaining:
 
-- Playwright prototype for Taipei official site
+- Playwright prototype for Taipei official site form interaction
 - Email verification pause
 - Attachment upload
 - Pre-submit summary and human confirmation
@@ -158,8 +167,9 @@ Remaining:
 npm run check
 npm run verify:test-files
 npm run create:case -- test-files --jurisdiction taipei
+npm run prepare:submission -- cases/case-20260616T023454/draft.json
 node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
-find cases/case-20260615T052016/converted -maxdepth 1 -type f -exec file {} \;
+find cases/case-20260616T023454/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
-All listed commands completed successfully on 2026-06-15.
+All listed commands completed successfully on 2026-06-16.

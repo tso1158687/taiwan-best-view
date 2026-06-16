@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { pathExists, run } from "./lib/system.mjs";
 import { readSipsMetadata } from "./lib/metadata.mjs";
+import { createSubmissionPacket } from "./lib/submission-packet.mjs";
 
 function assert(condition, message) {
   if (!condition) {
@@ -52,6 +53,14 @@ async function main() {
   assert(report.attachments.some((attachment) => attachment.gpsStatus === "present"), "Expected one attachment with GPS.");
   assert(report.attachments.some((attachment) => attachment.gpsStatus === "missing"), "Expected one attachment missing GPS.");
 
+  const draft = JSON.parse(await readFile(join(report.caseDirectory, "draft.json"), "utf8"));
+  const packet = await createSubmissionPacket({ draft });
+  assert(packet.official.url === "https://prsweb.tcpd.gov.tw/", "Expected Taipei official URL.");
+  assert(packet.attachments.length === 2, "Expected packet attachment count.");
+  assert(packet.missing.includes("case.plate"), "Expected plate to remain missing until human confirmation.");
+  assert(packet.missing.includes("reporter.name"), "Expected reporter data to remain missing.");
+  assert(packet.official.stopBefore.includes("final_submit"), "Expected final submit stop boundary.");
+
   console.log(JSON.stringify({
     ok: true,
     caseDirectory: report.caseDirectory,
@@ -62,6 +71,8 @@ async function main() {
     locationTextCandidates: report.photoAnalysis.locationTextCandidates.map((candidate) => candidate.text),
     plateSuggestions: report.fieldSuggestions.plate.map((suggestion) => suggestion.value),
     addressNoteSuggestions: report.fieldSuggestions.addressNote.map((suggestion) => suggestion.value),
+    submissionPacketStatus: packet.status,
+    submissionPacketMissing: packet.missing,
   }, null, 2));
 }
 

@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check app.js && node --check scripts/convert-heic.mjs && node --check scripts/create-case.mjs && node --check scripts/verify-test-files.mjs && node --check scripts/lib/system.mjs && node --check scripts/lib/metadata.mjs && node --check scripts/lib/heic-conversion.mjs && node --check scripts/lib/location-candidates.mjs && node --check scripts/lib/photo-analysis.mjs && node --check scripts/lib/field-suggestions.mjs",
+    "check": "node --check app.js && node --check scripts/convert-heic.mjs && node --check scripts/create-case.mjs && node --check scripts/prepare-submission.mjs && node --check scripts/verify-test-files.mjs && node --check scripts/lib/system.mjs && node --check scripts/lib/metadata.mjs && node --check scripts/lib/heic-conversion.mjs && node --check scripts/lib/location-candidates.mjs && node --check scripts/lib/photo-analysis.mjs && node --check scripts/lib/field-suggestions.mjs && node --check scripts/lib/submission-packet.mjs",
     "convert:heic": "node scripts/convert-heic.mjs",
     "create:case": "node scripts/create-case.mjs",
+    "prepare:submission": "node scripts/prepare-submission.mjs",
     "verify:test-files": "node scripts/verify-test-files.mjs"
   }
 }
