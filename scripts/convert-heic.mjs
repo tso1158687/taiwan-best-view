@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { commandExists, pathExists } from "./lib/system.mjs";
-import { collectHeicInputs, convertHeicOne } from "./lib/heic-conversion.mjs";
+import { collectHeicInputs, convertHeicOne, metadataToolingStatus } from "./lib/heic-conversion.mjs";
 
 function usage() {
   console.log("Usage: node scripts/convert-heic.mjs <input-file-or-directory> [output-directory]");
@@ -24,7 +24,8 @@ async function main() {
     throw new Error("macOS qlmanage is required for HEIC image rendering.");
   }
 
-  const hasExiftool = await commandExists("exiftool");
+  const tooling = await metadataToolingStatus();
+  const hasExiftool = tooling.exiftool;
   const inputs = await collectHeicInputs(inputArg);
   if (inputs.length === 0) {
     console.log("No HEIC/HEIF files found.");
@@ -36,7 +37,7 @@ async function main() {
     results.push(await convertHeicOne(input, outputArg, { hasExiftool }));
   }
 
-  console.log(JSON.stringify({ hasExiftool, results }, null, 2));
+  console.log(JSON.stringify({ tooling, hasExiftool, results }, null, 2));
 }
 
 main().catch((error) => {

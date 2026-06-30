@@ -196,6 +196,7 @@ export async function readJpegExif(path) {
 export async function verifyWithExiftool(path) {
   const { stdout } = await run("exiftool", [
     "-j",
+    "-n",
     "-DateTimeOriginal",
     "-CreateDate",
     "-GPSLatitude",
@@ -203,12 +204,16 @@ export async function verifyWithExiftool(path) {
     path,
   ]);
   const [metadata] = JSON.parse(stdout);
-  const capturedAt = metadata.DateTimeOriginal || metadata.CreateDate || "";
+  const capturedAt = sipsDateToTaiwanIso(metadata.DateTimeOriginal || metadata.CreateDate || "");
   const hasDate = Boolean(capturedAt);
-  const hasGps = Boolean(metadata.GPSLatitude && metadata.GPSLongitude);
+  const latitude = typeof metadata.GPSLatitude === "number" ? metadata.GPSLatitude : null;
+  const longitude = typeof metadata.GPSLongitude === "number" ? metadata.GPSLongitude : null;
+  const hasGps = typeof latitude === "number" && typeof longitude === "number";
 
   return {
     capturedAt,
+    latitude,
+    longitude,
     hasDate,
     hasGps,
     exifStatus: hasDate && hasGps ? "preserved" : hasDate ? "partial" : "missing",

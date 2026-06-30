@@ -37,6 +37,13 @@ export async function copyMetadata(inputPath, outputPath) {
   ]);
 }
 
+export async function metadataToolingStatus() {
+  return {
+    qlmanage: await commandExists("qlmanage"),
+    exiftool: await commandExists("exiftool"),
+  };
+}
+
 export async function convertHeicOne(inputPath, outputDirectory, options = {}) {
   if (!(await commandExists("qlmanage"))) {
     throw new Error("macOS qlmanage is required for HEIC image rendering.");
@@ -67,15 +74,23 @@ export async function convertHeicOne(inputPath, outputDirectory, options = {}) {
     throw new Error(`Rendered image has no readable dimensions: ${outputPath}`);
   }
 
+  let metadataEmbeddingStatus = hasExiftool ? "attempted" : "sidecar_only";
+  let metadataEmbeddingError = "";
   if (hasExiftool) {
-    await copyMetadata(inputPath, outputPath);
+    try {
+      await copyMetadata(inputPath, outputPath);
+      metadataEmbeddingStatus = "embedded";
+    } catch (error) {
+      metadataEmbeddingStatus = "failed_sidecar_fallback";
+      metadataEmbeddingError = error.message;
+    }
   }
 
   if (!(await pathExists(outputPath))) {
     throw new Error(`Conversion reported success but output is missing: ${outputPath}`);
   }
 
-  const metadata = hasExiftool
+  const metadata = metadataEmbeddingStatus === "embedded"
     ? await verifyConvertedMetadata(inputPath, outputPath)
     : await verifyConvertedMetadata(inputPath, outputPath, { sidecarOnly: true });
   const originalMetadata = await readSipsMetadata(inputPath);
@@ -91,6 +106,9 @@ export async function convertHeicOne(inputPath, outputDirectory, options = {}) {
     latitude: metadata.latitude ?? null,
     longitude: metadata.longitude ?? null,
     verificationSource: metadata.source,
+    metadataEmbeddingStatus,
+    metadataEmbeddingTool: hasExiftool ? "exiftool" : "",
+    metadataEmbeddingError,
     renderedSize,
     renderedWidth,
     renderedHeight,

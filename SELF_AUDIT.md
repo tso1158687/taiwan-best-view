@@ -1,6 +1,6 @@
 # Self Audit
 
-Audit date: 2026-06-17
+Audit date: 2026-06-30
 
 ## Test Inputs
 
@@ -39,6 +39,8 @@ Observed output:
 - Generated official selector reports for Taipei and New Taipei from public official-site HTML / JavaScript evidence
 - Generated local case records that preserve submission status, automation status, attachment summaries, and manually filled official-case fields
 - Verified local case-record update and case-summary logic for post-submission official case numbers
+- Verified reporter-profile validation and review-ready packet generation with fixture-only reporter data
+- Verified metadata tooling diagnostics for QuickLook plus optional exiftool embedding
 - Added `README.md` with installation, verification, safety boundaries, and common workflow commands for public handoff
 
 Metadata evidence:
@@ -49,6 +51,7 @@ Metadata evidence:
 - `IMG_2630.HEIC` does not contain GPS in sidecar metadata
 - `IMG_2631.HEIC` contains GPS in sidecar metadata: `25.022475, 121.426317`
 - CoreLocation reverse geocoding was attempted for `25.022475, 121.426317` and returned `unavailable` / `timeout` in the latest verification run, so the workflow correctly retained coordinate/map candidates instead of inventing an address
+- Metadata embedding status is recorded for each converted HEIC attachment; on the latest local machine, `exiftool` was not available, so conversion used `sidecar_only` metadata mode
 - Verification source: QuickLook image rendering plus local JPEG EXIF sidecar parser, without `exiftool`
 
 ## MVP Plan Status
@@ -83,11 +86,13 @@ Evidence:
 - Converted PNG files are visible rendered images with readable pixel dimensions
 - Sidecar metadata records captured time and GPS status from the original HEIC metadata probe
 - Draft attachments record original and submission file names, paths, conversion status, EXIF status, GPS status, and verification source
+- Draft attachments record metadata embedding status, including exiftool embedding or sidecar fallback mode
+- `scripts/inspect-metadata-tooling.mjs` reports whether QuickLook and exiftool are available
 
 Remaining:
 
-- Full EXIF embedding into the submission image is still better with `exiftool`
-- Current local parser preserves metadata in draft sidecar data, but does not embed missing metadata into the PNG
+- Current machine does not have `exiftool`, so latest verification used `sidecar_only` metadata mode
+- If exiftool is installed, conversion attempts embedding but still needs real-machine verification with that installed toolchain
 
 ### Phase 2: Photo Parsing
 
@@ -140,6 +145,9 @@ Evidence:
 - The packet maps case date/time, plate parts, district, road, address note, fact, description, and attachments into a stable structure for automation
 - The packet explicitly stops before Email verification, personal-data statements, truthfulness statement, and final submit
 - The packet reports missing reporter profile fields instead of inventing personal data
+- `scripts/init-reporter-profile.mjs` creates a local ignored reporter profile template
+- `scripts/validate-reporter-profile.mjs` validates reporter profile completeness without printing personal data values
+- `createSubmissionPacket` accepts a reporter profile, validates invalid email / identity type fields, and produces `ready_for_human_review` only when both case and reporter fields are complete
 - `scripts/taipei-dry-run.mjs` writes `taipei-automation-plan.json` without opening or submitting to the official site
 - `scripts/taipei-prototype.mjs` writes `taipei-prototype-run.json` and refuses to contact the official site unless required data is complete and `--allow-network` is explicitly provided
 - `scripts/lib/official-selector-manifests.mjs` records Taipei route, API, field, attachment, and human-stop selectors from the official Vue bundle observed on 2026-06-16
@@ -149,6 +157,8 @@ Evidence:
 - The dry-run plan is `blocked_by_missing_data` for the current test case because plate, district, road, and reporter fields are still missing
 - The dry-run plan marks Email verification, declarations, and final submit as human-required stop points
 - Verification confirmed `taipeiPrototypeStatus: "blocked_by_missing_data"`, `taipeiSelectorFieldCount: 17`, no external side effects, and no final submit path
+- Verification confirmed a fixture-only complete reporter profile can produce `reviewedPacketStatus: "ready_for_human_review"` without exposing reporter values in summary output
+- Verification confirmed `reporterProfileSummaryStatus: "ready"` for fixture-only complete data, while `reporter-profile.example.json` remains intentionally incomplete and validates as `needs_missing_data`
 - Verification confirmed `taipeiFixtureFillStatus: "ok"`, `taipeiFixtureFilledFields: 15`, `taipeiFixtureUploadedAttachments: 2`, and no triggered human stop or final submit
 - Live official preflight wrote `cases/taipei-live-preflight.json` with `status: "needs_official_recheck"` because the Taipei SPA timed out in headless Playwright before visible reporter fields became available
 - Latest written Taipei evidence: `cases/case-20260616T031513/taipei-fixture-fill-report.json`, `taipei-automation-plan.json`, and `case-record.json`
@@ -157,6 +167,7 @@ Remaining:
 
 - Live Taipei run still needs user-confirmed complete case data and reporter profile before it can safely open the official site
 - Email verification, pre-submit summary, declarations, and final submit remain human-gated
+- Real reporter profile data must remain local and ignored; only `reporter-profile.example.json` is committed
 
 ### Phase 5: New Taipei Semi-Automated Form Filling
 
@@ -219,6 +230,7 @@ Evidence:
 
 ```sh
 npm run check
+npm run inspect:metadata
 npm run verify:ui
 npm run verify:test-files
 npm run inspect:selectors -- taipei
@@ -242,4 +254,4 @@ node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
 find cases/case-20260616T024545/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
-All listed commands completed successfully by the 2026-06-17 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260616T163821`; the latest case-record file checks used `cases/case-20260616T160849`; the latest UI fixture verification returned `uiFixtureVerification: "ok"`; the latest live official preflight reports were written to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json`.
+All listed commands completed successfully by the 2026-06-30 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260630T024133`; the latest reporter-profile fixture verification returned `reviewedPacketStatus: "ready_for_human_review"` and `reporterProfileSummaryStatus: "ready"`; the latest metadata verification returned `metadataEmbeddingStatuses: ["sidecar_only", "sidecar_only"]`; the latest UI fixture verification returned `uiFixtureVerification: "ok"`; the latest live official preflight reports were written earlier to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json`.

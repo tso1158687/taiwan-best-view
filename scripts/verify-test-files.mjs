@@ -11,6 +11,7 @@ import { createCaseRecord } from "./lib/case-records.mjs";
 import { updateCaseRecord, summarizeCaseRecord } from "./lib/case-records.mjs";
 import { validateSelectorManifest } from "./lib/official-selector-manifests.mjs";
 import { createReviewedPacketForFixture, runFixtureFill } from "./lib/browser-fixture-runner.mjs";
+import { summarizeReporterProfile, validateReporterProfile } from "./lib/reporter-profile.mjs";
 
 function assert(condition, message) {
   if (!condition) {
@@ -56,7 +57,8 @@ async function main() {
 
   const converted = report.attachments.filter((attachment) => attachment.conversionStatus === "converted");
   assert(converted.length === 2, "Expected both HEIC files to be converted.");
-  assert(converted.every((attachment) => attachment.exifStatus === "sidecar"), "Expected EXIF to be preserved in draft sidecar metadata.");
+  assert(converted.every((attachment) => ["sidecar", "partial", "preserved"].includes(attachment.exifStatus)), "Expected EXIF to be preserved or tracked in draft sidecar metadata.");
+  assert(converted.every((attachment) => ["sidecar_only", "embedded", "failed_sidecar_fallback"].includes(attachment.metadataEmbeddingStatus)), "Expected metadata embedding status for both converted files.");
   assert(converted.every((attachment) => attachment.renderedWidth > 0 && attachment.renderedHeight > 0), "Expected rendered dimensions for both attachments.");
   assert(report.attachments.some((attachment) => attachment.gpsStatus === "present"), "Expected one attachment with GPS.");
   assert(report.attachments.some((attachment) => attachment.gpsStatus === "missing"), "Expected one attachment missing GPS.");
@@ -68,6 +70,33 @@ async function main() {
   assert(packet.missing.includes("case.plate"), "Expected plate to remain missing until human confirmation.");
   assert(packet.missing.includes("reporter.name"), "Expected reporter data to remain missing.");
   assert(packet.official.stopBefore.includes("final_submit"), "Expected final submit stop boundary.");
+  const reporterProfile = {
+    identityType: "national_id",
+    identityNumber: "A123456789",
+    name: "Fixture Reporter",
+    phone: "0912345678",
+    phoneExtension: "",
+    address: "台北市測試區測試路1號",
+    email: "fixture@example.com",
+    residencePermitFrontFile: "",
+  };
+  const reporterSummary = summarizeReporterProfile(reporterProfile);
+  assert(reporterSummary.status === "ready", "Expected complete reporter profile fixture to validate.");
+  assert(!JSON.stringify(reporterSummary).includes("A123456789"), "Reporter summary must not expose identity number.");
+  assert(!JSON.stringify(reporterSummary).includes("fixture@example.com"), "Reporter summary must not expose email value.");
+  const invalidReporter = validateReporterProfile({ ...reporterProfile, email: "not-an-email" });
+  assert(invalidReporter.invalid.includes("reporter.email"), "Expected invalid reporter email to be reported.");
+  const reviewedDraft = {
+    ...draft,
+    plate: "ABC-1234",
+    district: "新莊區",
+    road: "中正路",
+    addressNote: "傳品牛排附近，實際位置仍需人工確認",
+  };
+  const readyPacket = await createSubmissionPacket({ draft: reviewedDraft, reporterProfile });
+  assert(readyPacket.status === "ready_for_human_review", "Expected complete reporter profile and reviewed case fields to produce a review-ready packet.");
+  assert(readyPacket.missing.length === 0, "Expected no missing fields for review-ready packet.");
+  assert(readyPacket.reporterProfile.provided === true, "Expected reporter profile to be marked as provided.");
   const taipeiPlan = createTaipeiAutomationPlan(packet);
   assert(taipeiPlan.status === "blocked_by_missing_data", "Expected Taipei dry run to be blocked by missing data.");
   assert(taipeiPlan.safety.dryRunOnly === true, "Expected Taipei plan to be dry-run only.");
@@ -147,6 +176,9 @@ async function main() {
     addressNoteSuggestions: report.fieldSuggestions.addressNote.map((suggestion) => suggestion.value),
     submissionPacketStatus: packet.status,
     submissionPacketMissing: packet.missing,
+    reviewedPacketStatus: readyPacket.status,
+    reporterProfileSummaryStatus: reporterSummary.status,
+    metadataEmbeddingStatuses: converted.map((attachment) => attachment.metadataEmbeddingStatus),
     taipeiDryRunStatus: taipeiPlan.status,
     taipeiDryRunManualStops: taipeiPlan.steps.filter((item) => item.requiresHuman).length,
     taipeiPrototypeStatus: taipeiPrototype.status,

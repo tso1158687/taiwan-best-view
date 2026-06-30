@@ -76,6 +76,9 @@ function createAttachment({ originalPath, originalName, submissionPath, submissi
     longitude: conversion?.longitude ?? null,
     renderedWidth: conversion?.renderedWidth ?? null,
     renderedHeight: conversion?.renderedHeight ?? null,
+    metadataEmbeddingStatus: conversion?.metadataEmbeddingStatus || "not_applicable",
+    metadataEmbeddingTool: conversion?.metadataEmbeddingTool || "",
+    metadataEmbeddingError: conversion?.metadataEmbeddingError || "",
     acceptedByOfficial: ["jpg", "jpeg", "png", "bmp", "tiff"].includes(submissionExtension),
     verificationSource: conversion?.verificationSource || "sips",
     note: conversion?.note || "",
@@ -204,6 +207,8 @@ async function main() {
       hasGps: typeof attachment.latitude === "number" && typeof attachment.longitude === "number",
       renderedWidth: attachment.renderedWidth,
       renderedHeight: attachment.renderedHeight,
+      metadataEmbeddingStatus: attachment.metadataEmbeddingStatus,
+      metadataEmbeddingTool: attachment.metadataEmbeddingTool,
       note: attachment.note,
     })),
   };

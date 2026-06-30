@@ -14,6 +14,7 @@ Taiwan Best View is a local-first helper for preparing Taiwan traffic violation 
 - Runs Playwright fixture fills locally without contacting official websites.
 - Records local case status, official case number, lookup password, and correction status after manual submission.
 - Imports local case records and case-history JSON into the browser UI for review.
+- Validates local reporter profiles without printing personal data values.
 
 ## Safety Boundaries
 
@@ -48,10 +49,28 @@ Create a local Taipei case from photos:
 npm run create:case -- test-files --jurisdiction taipei
 ```
 
+Check local metadata tooling:
+
+```sh
+npm run inspect:metadata
+```
+
+If `exiftool` is installed, HEIC conversion attempts to embed/copy original metadata into generated PNG files. If it is not installed or embedding fails, the workflow keeps original metadata in draft sidecar data and marks the converted attachment accordingly.
+
+Create and validate a private reporter profile:
+
+```sh
+npm run init:reporter-profile
+npm run validate:reporter-profile -- reporter-profile.local.json
+```
+
+The validator reports missing/invalid field names only. It does not print identity numbers, names, phone numbers, addresses, or email values.
+
 Prepare a submission packet:
 
 ```sh
 npm run prepare:submission -- cases/<case-id>/draft.json
+npm run prepare:submission -- cases/<case-id>/draft.json reporter-profile.local.json
 ```
 
 Generate guarded automation plans:
@@ -105,7 +124,8 @@ npm run verify:ui
 
 ## Current Limits
 
-- The generated PNG submission files are visually rendered and metadata is preserved in draft sidecar data. Full EXIF embedding into PNG/JPEG still requires a future `exiftool` integration.
+- The generated PNG submission files are visually rendered and metadata is preserved in draft sidecar data.
+- On machines with `exiftool`, conversion attempts metadata embedding and falls back to sidecar metadata if embedding fails. Run `npm run inspect:metadata` to confirm the local mode.
 - GPS and reverse geocoding are only starting points. If Apple CoreLocation times out or returns no placemark, the tool keeps coordinate/map candidates and requires manual confirmation.
 - Live official-site automation is guarded and should not proceed until real case data and reporter profile fields are complete.
 - Taipei's official SPA may time out in headless Playwright even when static resources are reachable; use `official:preflight` as a diagnostic rather than a submission path.

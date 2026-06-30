@@ -2,4 +2,6 @@
 node_modules/
 cases/
 test-files/
+reporter-profile.local.json
+reporter-profiles/
 *.tmp

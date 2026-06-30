@@ -1,6 +1,6 @@
 # Project Progress
 
-Updated: 2026-06-17
+Updated: 2026-06-30
 
 ## Current State
 
@@ -8,8 +8,8 @@ The project is published as a public GitHub repository:
 
 - Repository: https://github.com/tso1158687/taiwan-best-view
 - Default branch: `main`
-- Latest recorded commit: `c80e86d Add case record import UI`
-- Local branch status at the time of this note: `main...origin/main`
+- Progress baseline before reporter-profile and metadata-tooling work: `cb63e72 Record current project progress`
+- Local branch status at the time of this update: `main...origin/main` before the current work is committed
 
 `test-files/`, `cases/`, `node_modules/`, and `.DS_Store` are intentionally ignored and should not be committed because they may contain real evidence photos, generated case data, dependencies, or local machine files.
 
@@ -26,12 +26,14 @@ The project is published as a public GitHub repository:
 - Apple Vision OCR for plate candidates and location text clues.
 - Field suggestions for plate, district, road, and address note.
 - Submission packet generation for Taipei and New Taipei.
+- Local reporter profile validation and submission-packet integration.
 - Guarded automation plans that stop before CAPTCHA, Email verification, declarations, and final submit.
 - Official selector manifests for Taipei and New Taipei.
 - Read-only live official-site preflight scripts.
 - Local Playwright fixture fill verification without contacting official websites.
 - Local case record creation, update, and case-history summary.
 - Browser UI import for `case-record.json` and `case-history.json`.
+- Metadata tooling diagnostics for QuickLook and optional exiftool embedding.
 - Public handoff documentation in `README.md` and detailed audit notes in `SELF_AUDIT.md`.
 
 ## Latest Verified Evidence
@@ -41,10 +43,11 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 - `npm run check`
 - `npm run verify:ui`
 - `npm run verify:test-files`
+- `npm run inspect:metadata`
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260616T163821`
+- `cases/case-20260630T024133`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -57,6 +60,9 @@ Important observed results from the real `test-files/` HEIC photos:
 - Taipei local fixture fill: `ok`, 15 fields filled, 2 attachments uploaded, no final submit.
 - New Taipei local fixture fill: `ok`, 19 fields filled, 2 attachments uploaded, no final submit.
 - UI fixture verification: `ok`
+- Reporter-profile fixture status: `ready`
+- Reviewed packet status with complete fixture-only case and reporter fields: `ready_for_human_review`
+- Metadata embedding statuses on this machine: `sidecar_only`, `sidecar_only`
 
 ## Known Limits
 
@@ -65,18 +71,16 @@ Important observed results from the real `test-files/` HEIC photos:
 - Reporter identity/profile fields are not invented by the tool and must be provided by the user.
 - GPS and reverse geocoding are only review candidates. They do not prove the road, direction, or exact legal location.
 - CoreLocation reverse geocoding can time out or return unavailable.
-- The converted PNG preserves original metadata in draft sidecar data, but full EXIF embedding into the submission image still needs a future `exiftool` integration if that becomes necessary.
+- The converted PNG preserves original metadata in draft sidecar data. If `exiftool` is installed, conversion attempts metadata embedding and falls back to sidecar metadata if embedding fails.
 - Taipei's official SPA can time out in headless Playwright during live preflight, so live official checks are diagnostic only.
 - Browser UI case history is loaded by importing generated JSON; the static page does not scan the local `cases/` directory directly.
 
 ## Suggested Next Steps
 
-1. Add a reporter-profile workflow that keeps personal data local and never commits it.
-2. Add optional `exiftool` support to copy original EXIF into generated submission images.
-3. Improve location review with a manual map confirmation UI.
-4. Improve OCR confidence scoring and plate normalization.
-5. Re-run read-only official preflights before any real assisted submission because official sites can change selectors.
-6. For a real case, fill missing case fields and reporter profile, then run guarded dry-run/prototype commands before manually completing official verification and final submit.
+1. Improve location review with a manual map confirmation UI.
+2. Improve OCR confidence scoring and plate normalization.
+3. Re-run read-only official preflights before any real assisted submission because official sites can change selectors.
+4. For a real case, fill missing case fields and reporter profile, then run guarded dry-run/prototype commands before manually completing official verification and final submit.
 
 ## Resume Checklist
 
@@ -85,6 +89,7 @@ Before continuing development:
 ```sh
 git status --short --branch --ignored
 npm run check
+npm run inspect:metadata
 npm run verify:ui
 ```
 

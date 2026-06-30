@@ -1,4 +1,5 @@
 import { stat } from "node:fs/promises";
+import { validateReporterProfile } from "./reporter-profile.mjs";
 
 const TAIPEI_OFFICIAL_URL = "https://prsweb.tcpd.gov.tw/";
 const NEW_TAIPEI_OFFICIAL_URL = "https://tvrs.ntpd.gov.tw/";
@@ -104,6 +105,7 @@ function createBasePacket({ draft, reporterProfile, attachments }) {
     reporterProfile: {
       provided: Boolean(reporterProfile),
       missing: [],
+      invalid: [],
     },
     caseData: {
       violationType: draft.violationType,
@@ -147,7 +149,11 @@ export async function createSubmissionPacket({ draft, reporterProfile = null }) 
         "final_submit",
       ],
     };
-    packet.reporterProfile.missing = missingFields(reporterProfile, TAIPEI_REPORTER_FIELDS, "reporter");
+    const validation = validateReporterProfile(reporterProfile);
+    packet.reporterProfile.missing = reporterProfile
+      ? validation.missing
+      : missingFields(reporterProfile, TAIPEI_REPORTER_FIELDS, "reporter");
+    packet.reporterProfile.invalid = validation.invalid;
     packet.formMapping = {
       reporter: {
         identityType: reporterProfile?.identityType || "",
@@ -183,7 +189,11 @@ export async function createSubmissionPacket({ draft, reporterProfile = null }) 
         "final_submit",
       ],
     };
-    packet.reporterProfile.missing = missingFields(reporterProfile, NEW_TAIPEI_REPORTER_FIELDS, "reporter");
+    const validation = validateReporterProfile(reporterProfile);
+    packet.reporterProfile.missing = reporterProfile
+      ? validation.missing
+      : missingFields(reporterProfile, NEW_TAIPEI_REPORTER_FIELDS, "reporter");
+    packet.reporterProfile.invalid = validation.invalid;
     packet.formMapping = {
       case: {
         vehicleType: "汽車",
@@ -213,7 +223,7 @@ export async function createSubmissionPacket({ draft, reporterProfile = null }) 
     throw new Error(`Unsupported jurisdiction: ${draft.jurisdiction}`);
   }
 
-  packet.missing = [...packet.missing, ...packet.reporterProfile.missing];
+  packet.missing = [...packet.missing, ...packet.reporterProfile.missing, ...packet.reporterProfile.invalid];
   packet.status = packet.missing.length === 0 ? "ready_for_human_review" : "needs_missing_data";
 
   return packet;
