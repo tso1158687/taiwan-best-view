@@ -387,6 +387,12 @@ textarea:focus {
   gap: 10px;
 }
 
+.location-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .location-links a {
   color: var(--accent);
   font-size: 0.9rem;

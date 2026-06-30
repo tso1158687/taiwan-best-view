@@ -121,6 +121,16 @@
           "renderedHeight": {
             "type": ["number", "null"]
           },
+          "metadataEmbeddingStatus": {
+            "type": "string",
+            "enum": ["not_applicable", "sidecar_only", "attempted", "embedded", "failed_sidecar_fallback"]
+          },
+          "metadataEmbeddingTool": {
+            "type": "string"
+          },
+          "metadataEmbeddingError": {
+            "type": "string"
+          },
           "acceptedByOfficial": {
             "type": "boolean"
           },
@@ -175,6 +185,12 @@
                   "type": "string"
                 }
               },
+              "addressLabel": {
+                "type": "string"
+              },
+              "reverseGeocode": {
+                "type": "object"
+              },
               "maps": {
                 "type": "object",
                 "properties": {
@@ -191,6 +207,57 @@
               }
             }
           }
+        }
+      }
+    },
+    "locationReview": {
+      "type": ["object", "null"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["confirmed_by_user"]
+        },
+        "confirmedAt": {
+          "type": "string"
+        },
+        "candidateLabel": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "latitude": {
+          "type": "number"
+        },
+        "longitude": {
+          "type": "number"
+        },
+        "evidenceFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "addressLabel": {
+          "type": "string"
+        },
+        "reverseGeocodeStatus": {
+          "type": "string"
+        },
+        "district": {
+          "type": "string"
+        },
+        "road": {
+          "type": "string"
+        },
+        "addressNote": {
+          "type": "string"
+        },
+        "maps": {
+          "type": "object"
+        },
+        "note": {
+          "type": "string"
         }
       }
     },
@@ -256,6 +323,12 @@
           }
         },
         "road": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fieldSuggestion"
+          }
+        },
+        "district": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/fieldSuggestion"

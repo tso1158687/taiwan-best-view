@@ -41,6 +41,7 @@ Observed output:
 - Verified local case-record update and case-summary logic for post-submission official case numbers
 - Verified reporter-profile validation and review-ready packet generation with fixture-only reporter data
 - Verified metadata tooling diagnostics for QuickLook plus optional exiftool embedding
+- Verified browser UI location candidate adoption into `locationReview`
 - Added `README.md` with installation, verification, safety boundaries, and common workflow commands for public handoff
 
 Metadata evidence:
@@ -126,13 +127,13 @@ Evidence:
 - Frontend has a `地點候選` panel for imported drafts
 - Frontend has a `照片線索` panel and `欄位建議` panel for imported drafts
 - Frontend can apply imported field suggestions for plate, district, road, and address note
+- Frontend can adopt a GPS/map candidate into the draft as `locationReview` after user review
 
 Remaining:
 
 - Reverse geocoding can still be unavailable or timeout depending on Apple service/network state
 - Road/intersection candidates still require a reliable map/geocoder result or manual input
 - Confirmed frequent locations
-- Manual map/location candidate UI
 
 ### Phase 4: Taipei Semi-Automated Form Filling
 
@@ -254,4 +255,4 @@ node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
 find cases/case-20260616T024545/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
-All listed commands completed successfully by the 2026-06-30 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260630T024133`; the latest reporter-profile fixture verification returned `reviewedPacketStatus: "ready_for_human_review"` and `reporterProfileSummaryStatus: "ready"`; the latest metadata verification returned `metadataEmbeddingStatuses: ["sidecar_only", "sidecar_only"]`; the latest UI fixture verification returned `uiFixtureVerification: "ok"`; the latest live official preflight reports were written earlier to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json`.
+All listed commands completed successfully by the 2026-06-30 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260630T025633`; the latest reporter-profile fixture verification returned `reviewedPacketStatus: "ready_for_human_review"` and `reporterProfileSummaryStatus: "ready"`; the latest metadata verification returned `metadataEmbeddingStatuses: ["sidecar_only", "sidecar_only"]`; the latest UI fixture verification returned `uiFixtureVerification: "ok"` and covers location candidate confirmation; the latest live official preflight reports were written earlier to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json`.

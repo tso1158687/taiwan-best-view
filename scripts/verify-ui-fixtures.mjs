@@ -19,6 +19,14 @@ async function importJson(page, path) {
   });
 }
 
+async function importDraftJson(page, path) {
+  await page.locator("#importInput").setInputFiles(path);
+  await page.waitForFunction(() => {
+    const panel = document.querySelector("#locationPanel");
+    return panel && panel.hidden === false;
+  });
+}
+
 async function visibleText(page, selector) {
   return page.locator(selector).innerText();
 }
@@ -27,6 +35,7 @@ async function main() {
   const fixtureDir = await mkdtemp(join(tmpdir(), "taiwan-best-view-ui-"));
   const recordPath = join(fixtureDir, "case-record.json");
   const historyPath = join(fixtureDir, "case-history.json");
+  const draftPath = join(fixtureDir, "draft-with-location.json");
   const caseRecord = {
     schemaVersion: 1,
     caseId: "case-ui-fixture",
@@ -87,9 +96,52 @@ async function main() {
       },
     ],
   };
+  const draftWithLocation = {
+    jurisdiction: "taipei",
+    violationType: "illegal_parking",
+    plate: "",
+    occurredAt: "2026-06-12T15:32:11+08:00",
+    district: "",
+    road: "",
+    addressNote: "",
+    fact: "違規停車",
+    description: "車輛停放於違規地點，妨礙通行或影響交通安全。",
+    files: [],
+    originalFiles: [],
+    attachments: [],
+    locationAssistance: {
+      status: "needs_review",
+      missingGpsAttachments: ["IMG_2630.HEIC"],
+      candidates: [
+        {
+          source: "exif_gps",
+          confidence: "needs_review",
+          label: "25.022475, 121.426317",
+          latitude: 25.022475,
+          longitude: 121.426317,
+          evidenceFiles: ["IMG_2631.HEIC"],
+          addressLabel: "新北市新莊區中正路",
+          reverseGeocode: {
+            status: "ok",
+            subLocality: "新莊區",
+            thoroughfare: "中正路",
+          },
+          maps: {
+            apple: "https://maps.apple.com/?ll=25.022475,121.426317",
+            google: "https://maps.google.com/?q=25.022475,121.426317",
+          },
+          note: "GPS only; user must verify.",
+        },
+      ],
+    },
+    photoAnalysis: null,
+    fieldSuggestions: { status: "empty", plate: [], district: [], road: [], addressNote: [] },
+    status: "draft",
+  };
 
   await writeFile(recordPath, `${JSON.stringify(caseRecord, null, 2)}\n`);
   await writeFile(historyPath, `${JSON.stringify(caseHistory, null, 2)}\n`);
+  await writeFile(draftPath, `${JSON.stringify(draftWithLocation, null, 2)}\n`);
 
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
@@ -105,13 +157,22 @@ async function main() {
     const historyText = await visibleText(page, "#caseRecordPanel");
     assert(historyText.includes("2 筆案件"), "Expected case history count to render.");
     assert(historyText.includes("case-ui-draft"), "Expected second history item to render.");
+
+    await importDraftJson(page, draftPath);
+    await page.getByRole("button", { name: "採用候選" }).click();
+    const draft = await page.evaluate(() => window.taiwanBestView.currentDraft());
+    assert(draft.district === "新莊區", "Expected selected location candidate to fill district.");
+    assert(draft.road === "中正路", "Expected selected location candidate to fill road.");
+    assert(draft.addressNote.includes("GPS 反查 新北市新莊區中正路"), "Expected selected location candidate to fill address note.");
+    assert(draft.locationReview?.status === "confirmed_by_user", "Expected selected location candidate to create locationReview.");
+    assert(draft.locationReview?.candidateLabel === "25.022475, 121.426317", "Expected selected location candidate label to be recorded.");
   } finally {
     await browser.close();
   }
 
   console.log(JSON.stringify({
     ok: true,
-    verified: ["case-record import", "case-history import"],
+    verified: ["case-record import", "case-history import", "location candidate confirmation"],
   }, null, 2));
 }
 

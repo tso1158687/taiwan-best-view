@@ -62,6 +62,7 @@ let importedAttachments = [];
 let importedLocationAssistance = null;
 let importedPhotoAnalysis = null;
 let importedFieldSuggestions = null;
+let importedLocationReview = null;
 let importedCaseRecordView = null;
 
 function toTaiwanIsoString(datetimeLocalValue) {
@@ -136,6 +137,7 @@ function createCaseDraft() {
     originalFiles: attachments.map((attachment) => attachment.originalName),
     attachments,
     locationAssistance: selectedFiles.length > 0 ? null : importedLocationAssistance,
+    locationReview: selectedFiles.length > 0 ? null : importedLocationReview,
     photoAnalysis: selectedFiles.length > 0 ? null : importedPhotoAnalysis,
     fieldSuggestions: selectedFiles.length > 0 ? null : importedFieldSuggestions,
     status: data.get("status"),
@@ -292,6 +294,43 @@ function applySuggestion(field, value) {
 
   handleInputChange();
   saveState.textContent = "已套用建議";
+}
+
+function candidateAddressNote(candidate) {
+  if (candidate.reverseGeocode?.status === "ok" && candidate.addressLabel) {
+    return `GPS 反查 ${candidate.addressLabel}`;
+  }
+  return `GPS 候選 ${candidate.label}`;
+}
+
+function applyLocationCandidate(candidate) {
+  const district = candidate.reverseGeocode?.subLocality || "";
+  const road = candidate.reverseGeocode?.thoroughfare || "";
+  const addressNote = candidateAddressNote(candidate);
+
+  if (district) form.elements.district.value = district;
+  if (road) form.elements.road.value = road;
+  applySuggestion("addressNote", addressNote);
+
+  importedLocationReview = {
+    status: "confirmed_by_user",
+    confirmedAt: new Date().toISOString(),
+    candidateLabel: candidate.label,
+    source: candidate.source,
+    latitude: candidate.latitude,
+    longitude: candidate.longitude,
+    evidenceFiles: candidate.evidenceFiles || [],
+    addressLabel: candidate.addressLabel || "",
+    reverseGeocodeStatus: candidate.reverseGeocode?.status || "unavailable",
+    district,
+    road,
+    addressNote,
+    maps: candidate.maps || {},
+    note: "User selected this candidate after reviewing map links and photo evidence.",
+  };
+
+  handleInputChange();
+  saveState.textContent = "已採用地點候選";
 }
 
 function renderFieldSuggestions(fieldSuggestions) {
@@ -508,8 +547,10 @@ function renderLocationAssistance(locationAssistance) {
     const title = document.createElement("div");
     const meta = document.createElement("div");
     const links = document.createElement("div");
+    const actions = document.createElement("div");
     const appleLink = document.createElement("a");
     const googleLink = document.createElement("a");
+    const applyButton = document.createElement("button");
 
     title.className = "location-title";
     title.textContent = candidate.label;
@@ -524,10 +565,30 @@ function renderLocationAssistance(locationAssistance) {
     googleLink.target = "_blank";
     googleLink.rel = "noreferrer";
     googleLink.textContent = "Google Maps";
+    actions.className = "location-actions";
+    applyButton.type = "button";
+    applyButton.className = "suggestion-action";
+    applyButton.textContent = "採用候選";
+    applyButton.addEventListener("click", () => applyLocationCandidate(candidate));
 
     links.append(appleLink, googleLink);
-    item.append(title, meta, links);
+    actions.append(applyButton);
+    item.append(title, meta, links, actions);
     locationList.append(item);
+  }
+
+  if (importedLocationReview?.status === "confirmed_by_user") {
+    const item = document.createElement("li");
+    const title = document.createElement("div");
+    const meta = document.createElement("div");
+
+    title.className = "location-title";
+    title.textContent = "已採用的地點候選";
+    meta.className = "location-meta";
+    meta.textContent = `${importedLocationReview.addressNote || importedLocationReview.candidateLabel}。仍需送件前人工確認路段、方向與照片證據。`;
+
+    item.append(title, meta);
+    locationList.prepend(item);
   }
 
   if (missingGpsAttachments.length > 0) {
@@ -588,6 +649,7 @@ function applyDraftToForm(draft) {
 
   importedAttachments = Array.isArray(draft.attachments) ? draft.attachments : [];
   importedLocationAssistance = draft.locationAssistance || null;
+  importedLocationReview = draft.locationReview || null;
   importedPhotoAnalysis = draft.photoAnalysis || null;
   importedFieldSuggestions = draft.fieldSuggestions || null;
   importedCaseRecordView = null;
@@ -651,6 +713,7 @@ function resetDraft() {
   selectedFiles = [];
   importedAttachments = [];
   importedLocationAssistance = null;
+  importedLocationReview = null;
   importedPhotoAnalysis = null;
   importedFieldSuggestions = null;
   importedCaseRecordView = null;
@@ -665,6 +728,7 @@ fileInput.addEventListener("change", () => {
   selectedFiles = Array.from(fileInput.files || []);
   importedAttachments = [];
   importedLocationAssistance = null;
+  importedLocationReview = null;
   importedPhotoAnalysis = null;
   importedFieldSuggestions = null;
   importedCaseRecordView = null;
