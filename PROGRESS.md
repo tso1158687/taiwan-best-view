@@ -1,6 +1,6 @@
 # Project Progress
 
-Updated: 2026-06-30
+Updated: 2026-07-08
 
 ## Current State
 
@@ -25,6 +25,7 @@ The project is published as a public GitHub repository:
 - macOS CoreLocation reverse-geocoding attempt for GPS candidates.
 - Manual location candidate adoption in the browser UI, recorded as `locationReview`.
 - Apple Vision OCR for plate candidates and location text clues.
+- OCR plate normalization, confidence scoring, confidence reasons, and official form splitting.
 - Field suggestions for plate, district, road, and address note.
 - Submission packet generation for Taipei and New Taipei.
 - Local reporter profile validation and submission-packet integration.
@@ -45,10 +46,13 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 - `npm run verify:ui`
 - `npm run verify:test-files`
 - `npm run inspect:metadata`
+- `npm run verify:plate`
+- `npm run official:preflight -- taipei --allow-network --json cases/taipei-live-preflight.json`
+- `npm run official:preflight -- new_taipei --allow-network --json cases/new-taipei-live-preflight.json`
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260630T025633`
+- `cases/case-20260708T155711`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -56,7 +60,8 @@ Important observed results from the real `test-files/` HEIC photos:
 - GPS candidate: `25.022475, 121.426317`
 - Reverse geocode status: `unavailable`, so the workflow kept coordinate/map candidates for manual review.
 - Missing GPS attachment: `IMG_2630.HEIC`
-- Plate candidates: `3999YG`, `3999-B`
+- Plate candidates: `3999-YG`, `3999-B`
+- Plate candidate patterns: `four_digits_two_letters`, `four_digits_one_letter_incomplete`
 - Location text candidates: `傳品牛排`
 - Taipei local fixture fill: `ok`, 15 fields filled, 2 attachments uploaded, no final submit.
 - New Taipei local fixture fill: `ok`, 19 fields filled, 2 attachments uploaded, no final submit.
@@ -65,6 +70,8 @@ Important observed results from the real `test-files/` HEIC photos:
 - Reporter-profile fixture status: `ready`
 - Reviewed packet status with complete fixture-only case and reporter fields: `ready_for_human_review`
 - Metadata embedding statuses on this machine: `sidecar_only`, `sidecar_only`
+- Latest Taipei official preflight: `ok`, 6 present selectors, 3 deferred selectors, 0 missing selectors.
+- Latest New Taipei official preflight: `ok`, 20 present selectors, 0 missing selectors.
 
 ## Known Limits
 
@@ -79,9 +86,8 @@ Important observed results from the real `test-files/` HEIC photos:
 
 ## Suggested Next Steps
 
-1. Improve OCR confidence scoring and plate normalization.
-2. Re-run read-only official preflights before any real assisted submission because official sites can change selectors.
-3. For a real case, fill missing case fields and reporter profile, then run guarded dry-run/prototype commands before manually completing official verification and final submit.
+1. For a real case, fill missing case fields and reporter profile, then run guarded dry-run/prototype commands before manually completing official verification and final submit.
+2. Keep re-running read-only official preflights before real assisted submission because official sites can change selectors.
 
 ## Resume Checklist
 
@@ -91,6 +97,7 @@ Before continuing development:
 git status --short --branch --ignored
 npm run check
 npm run inspect:metadata
+npm run verify:plate
 npm run verify:ui
 ```
 

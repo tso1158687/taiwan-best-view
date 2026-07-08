@@ -491,7 +491,12 @@ function appendTextCandidateItem(titleText, candidates) {
   title.textContent = titleText;
   meta.className = "location-meta";
   meta.textContent = candidates
-    .map((candidate) => `${candidate.text} (${Math.round((candidate.confidence || 0) * 100)}%)`)
+    .map((candidate) => {
+      const reasons = Array.isArray(candidate.confidenceReasons) && candidate.confidenceReasons.length > 0
+        ? `；${candidate.confidenceReasons.slice(0, 2).join("、")}`
+        : "";
+      return `${candidate.text} (${Math.round((candidate.confidence || 0) * 100)}%)${reasons}`;
+    })
     .join("、");
 
   item.append(title, meta);

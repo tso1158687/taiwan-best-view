@@ -1,4 +1,5 @@
 import { stat } from "node:fs/promises";
+import { splitPlateForForm } from "./plate-normalization.mjs";
 import { validateReporterProfile } from "./reporter-profile.mjs";
 
 const TAIPEI_OFFICIAL_URL = "https://prsweb.tcpd.gov.tw/";
@@ -27,16 +28,6 @@ function missingFields(source, fieldNames, prefix) {
   return fieldNames
     .filter((fieldName) => !String(source?.[fieldName] || "").trim())
     .map((fieldName) => `${prefix}.${fieldName}`);
-}
-
-function splitPlate(plate) {
-  const normalized = String(plate || "").trim().toUpperCase();
-  const [prefix, suffix] = normalized.split("-");
-  return {
-    raw: normalized,
-    prefix: suffix ? prefix : "",
-    suffix: suffix || normalized,
-  };
 }
 
 function formatTaiwanDateTime(value) {
@@ -109,7 +100,7 @@ function createBasePacket({ draft, reporterProfile, attachments }) {
     },
     caseData: {
       violationType: draft.violationType,
-      plate: splitPlate(draft.plate),
+      plate: splitPlateForForm(draft.plate),
       occurredAt: draft.occurredAt,
       occurredAtParts: formatTaiwanDateTime(draft.occurredAt),
       district: draft.district,

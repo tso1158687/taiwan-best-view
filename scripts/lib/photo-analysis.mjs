@@ -1,7 +1,7 @@
 import { basename } from "node:path";
 import { commandExists, run } from "./system.mjs";
+import { findPlateCandidatesFromText } from "./plate-normalization.mjs";
 
-const PLATE_PATTERN = /\b[A-Z0-9]{2,4}[-\s]?[A-Z0-9]{1,4}\b/g;
 const LOCATION_KEYWORDS = [
   "路",
   "街",
@@ -18,26 +18,14 @@ const LOCATION_KEYWORDS = [
   "門市",
 ];
 
-function normalizePlate(value) {
-  return value.replace(/\s+/g, "").toUpperCase();
-}
-
 function collectPlateCandidates(items) {
   const candidates = new Map();
 
   for (const item of items) {
-    const text = item.text.toUpperCase();
-    const matches = text.match(PLATE_PATTERN) || [];
-    for (const match of matches) {
-      const normalized = normalizePlate(match);
-      if (normalized.length < 5 || normalized.length > 8) continue;
-      const previous = candidates.get(normalized);
-      if (!previous || item.confidence > previous.confidence) {
-        candidates.set(normalized, {
-          text: normalized,
-          confidence: item.confidence,
-          sourceText: item.text,
-        });
+    for (const candidate of findPlateCandidatesFromText(item.text, item.confidence)) {
+      const previous = candidates.get(candidate.text);
+      if (!previous || candidate.confidence > previous.confidence) {
+        candidates.set(candidate.text, candidate);
       }
     }
   }

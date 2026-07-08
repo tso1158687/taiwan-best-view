@@ -46,6 +46,9 @@ async function main() {
   assert(report.locationAssistance.missingGpsAttachments.includes("IMG_2630.HEIC"), "Expected IMG_2630.HEIC to be listed as missing GPS.");
   assert(report.photoAnalysis.status === "ok", "Expected OCR photo analysis to succeed.");
   assert(report.photoAnalysis.plateCandidates.length >= 1, "Expected at least one plate candidate.");
+  assert(report.photoAnalysis.plateCandidates.some((candidate) => candidate.text === "3999-YG"), "Expected normalized 3999-YG plate candidate.");
+  assert(report.photoAnalysis.plateCandidates.some((candidate) => candidate.pattern === "four_digits_two_letters"), "Expected normalized plate pattern metadata.");
+  assert(report.photoAnalysis.plateCandidates.every((candidate) => Array.isArray(candidate.confidenceReasons)), "Expected confidence reasons on plate candidates.");
   assert(report.photoAnalysis.locationTextCandidates.length >= 1, "Expected at least one location text candidate.");
   assert(report.fieldSuggestions.status === "needs_review", "Expected field suggestions to need review.");
   assert(report.fieldSuggestions.plate.length >= 1, "Expected at least one plate field suggestion.");
@@ -171,6 +174,7 @@ async function main() {
       .filter(Boolean),
     missingGpsAttachments: report.locationAssistance.missingGpsAttachments,
     plateCandidates: report.photoAnalysis.plateCandidates.map((candidate) => candidate.text),
+    plateCandidatePatterns: report.photoAnalysis.plateCandidates.map((candidate) => candidate.pattern),
     locationTextCandidates: report.photoAnalysis.locationTextCandidates.map((candidate) => candidate.text),
     plateSuggestions: report.fieldSuggestions.plate.map((suggestion) => suggestion.value),
     addressNoteSuggestions: report.fieldSuggestions.addressNote.map((suggestion) => suggestion.value),

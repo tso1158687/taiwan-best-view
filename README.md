@@ -8,6 +8,7 @@ Taiwan Best View is a local-first helper for preparing Taiwan traffic violation 
 - Converts iPhone HEIC/HEIF photos to official-site-compatible PNG files.
 - Preserves original photo metadata in draft sidecar data for time and GPS review.
 - Extracts EXIF time, GPS candidates, OCR plate candidates, and location text clues.
+- Normalizes OCR plate candidates into official-form-friendly plate parts with confidence reasons.
 - Attempts macOS CoreLocation reverse geocoding for GPS candidates when available.
 - Lets the user manually adopt a GPS/map candidate into the draft as `locationReview`.
 - Builds submission packets for Taipei and New Taipei.
@@ -121,6 +122,12 @@ Browser UI fixture verification:
 
 ```sh
 npm run verify:ui
+```
+
+Plate normalization verification:
+
+```sh
+npm run verify:plate
 ```
 
 ## Current Limits

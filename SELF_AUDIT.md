@@ -1,6 +1,6 @@
 # Self Audit
 
-Audit date: 2026-06-30
+Audit date: 2026-07-08
 
 ## Test Inputs
 
@@ -29,7 +29,8 @@ Observed output:
 - Attempted macOS CoreLocation reverse geocoding for the GPS candidate
 - Listed `IMG_2630.HEIC` as missing GPS
 - Extracted OCR text candidates with Apple Vision
-- Extracted plate candidates including `3999YG` / `3999-B`
+- Extracted normalized plate candidates including `3999-YG` / `3999-B`
+- Ranked complete plate formats above incomplete OCR fragments and recorded confidence reasons
 - Extracted location text candidates including `傳品牛排`
 - Generated field suggestions for plate and address note
 - Generated a Taipei submission packet with official URL, form mapping, attachments, missing fields, and required human stop points
@@ -42,6 +43,8 @@ Observed output:
 - Verified reporter-profile validation and review-ready packet generation with fixture-only reporter data
 - Verified metadata tooling diagnostics for QuickLook plus optional exiftool embedding
 - Verified browser UI location candidate adoption into `locationReview`
+- Verified deterministic plate normalization, OCR correction reasons, and official form splitting
+- Re-ran read-only official preflights for Taipei and New Taipei
 - Added `README.md` with installation, verification, safety boundaries, and common workflow commands for public handoff
 
 Metadata evidence:
@@ -105,13 +108,13 @@ Evidence:
 - The earliest captured-at candidate is used as `occurredAt`
 - Apple Vision OCR reads converted PNG files
 - OCR plate candidates and location text candidates are written to `photoAnalysis`
+- Plate candidates include normalized text, plate pattern, confidence reasons, and require-review metadata
 - Plate and address note field suggestions are written to `fieldSuggestions`
 
 Remaining:
 
 - GPS extraction is not complete
-- OCR output still requires manual confirmation and better confidence scoring
-- Confidence scoring is not implemented
+- OCR output still requires manual confirmation
 
 ### Phase 3: Location Assistance
 
@@ -161,7 +164,7 @@ Evidence:
 - Verification confirmed a fixture-only complete reporter profile can produce `reviewedPacketStatus: "ready_for_human_review"` without exposing reporter values in summary output
 - Verification confirmed `reporterProfileSummaryStatus: "ready"` for fixture-only complete data, while `reporter-profile.example.json` remains intentionally incomplete and validates as `needs_missing_data`
 - Verification confirmed `taipeiFixtureFillStatus: "ok"`, `taipeiFixtureFilledFields: 15`, `taipeiFixtureUploadedAttachments: 2`, and no triggered human stop or final submit
-- Live official preflight wrote `cases/taipei-live-preflight.json` with `status: "needs_official_recheck"` because the Taipei SPA timed out in headless Playwright before visible reporter fields became available
+- Latest live official preflight wrote `cases/taipei-live-preflight.json` with `status: "ok"`, 6 present selectors, 3 deferred selectors, and 0 missing selectors
 - Latest written Taipei evidence: `cases/case-20260616T031513/taipei-fixture-fill-report.json`, `taipei-automation-plan.json`, and `case-record.json`
 
 Remaining:
@@ -232,6 +235,7 @@ Evidence:
 ```sh
 npm run check
 npm run inspect:metadata
+npm run verify:plate
 npm run verify:ui
 npm run verify:test-files
 npm run inspect:selectors -- taipei
@@ -255,4 +259,4 @@ node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
 find cases/case-20260616T024545/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
-All listed commands completed successfully by the 2026-06-30 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260630T025633`; the latest reporter-profile fixture verification returned `reviewedPacketStatus: "ready_for_human_review"` and `reporterProfileSummaryStatus: "ready"`; the latest metadata verification returned `metadataEmbeddingStatuses: ["sidecar_only", "sidecar_only"]`; the latest UI fixture verification returned `uiFixtureVerification: "ok"` and covers location candidate confirmation; the latest live official preflight reports were written earlier to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json`.
+All listed commands completed successfully by the 2026-07-08 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260708T155711`; the latest plate verification returned normalized candidates `3999-YG` and `3999-B` with patterns `four_digits_two_letters` and `four_digits_one_letter_incomplete`; the latest reporter-profile fixture verification returned `reviewedPacketStatus: "ready_for_human_review"` and `reporterProfileSummaryStatus: "ready"`; the latest metadata verification returned `metadataEmbeddingStatuses: ["sidecar_only", "sidecar_only"]`; the latest UI fixture verification returned `uiFixtureVerification: "ok"` and covers location candidate confirmation; the latest live official preflight reports were written to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json` with `status: "ok"`.
