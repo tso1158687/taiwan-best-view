@@ -88,10 +88,8 @@ function commandHints({ caseDirectory, jurisdiction, artifacts }) {
       : `npm run taipei:dry-run -- ${packetPath}`);
   }
   if (has("automation_plan") && has("readiness_report")) {
-    const planFile = jurisdiction === "new_taipei" ? "new-taipei-automation-plan.json" : "taipei-automation-plan.json";
-    const script = jurisdiction === "new_taipei" ? "new-taipei:prototype" : "taipei:prototype";
     commands.push(planFixtureCommand({ caseDirectory, jurisdiction }));
-    commands.push(`npm run ${script} -- ${caseDirectory}/${planFile} --readiness-report ${readinessPath} --allow-network`);
+    commands.push(prototypeCommand({ caseDirectory, jurisdiction }));
   }
   if (!has("case_record") && has("submission_packet")) {
     const planFile = jurisdiction === "new_taipei" ? "new-taipei-automation-plan.json" : "taipei-automation-plan.json";
@@ -110,8 +108,9 @@ function artifactPresent(artifacts, id) {
 
 function prototypeCommand({ caseDirectory, jurisdiction }) {
   const planFile = jurisdiction === "new_taipei" ? "new-taipei-automation-plan.json" : "taipei-automation-plan.json";
+  const planFixtureFile = jurisdiction === "new_taipei" ? "new-taipei-plan-fixture-report.json" : "taipei-plan-fixture-report.json";
   const script = jurisdiction === "new_taipei" ? "new-taipei:prototype" : "taipei:prototype";
-  return `npm run ${script} -- ${caseDirectory}/${planFile} --readiness-report ${caseDirectory}/case-readiness-report.json --allow-network`;
+  return `npm run ${script} -- ${caseDirectory}/${planFile} --readiness-report ${caseDirectory}/case-readiness-report.json --plan-fixture-report ${caseDirectory}/${planFixtureFile} --allow-network`;
 }
 
 function planFixtureCommand({ caseDirectory, jurisdiction }) {

@@ -64,7 +64,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T180537`
+- `cases/case-20260708T181044`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -110,7 +110,9 @@ Important observed results from the real `test-files/` HEIC photos:
 - Field review readiness verification: `candidate_confirmed_by_user`, adopted OCR/field suggestions are recorded for review.
 - Case readiness gate with complete local data but missing/stale official preflight: `needs_official_preflight`.
 - Guarded prototype gate with complete local data but missing readiness report: `blocked_by_readiness_report`.
-- Guarded prototype gate with complete local data and ready readiness report: `ready_for_guarded_browser`.
+- Guarded prototype gate with complete local data and readiness but missing plan fixture report: `blocked_by_plan_fixture_report`.
+- Guarded prototype gate with complete local data, ready readiness report, and matching plan fixture report: `ready_for_guarded_browser`.
+- Guarded prototype handoff verification: first human stop is `stop_before_email_verification` for Taipei and `stop_before_disclaimer` for New Taipei.
 - Guarded New Taipei prototype rejects a Taipei readiness report with jurisdiction and official URL mismatch issues.
 - Case readiness Markdown checklist verification: `ok`, reporter-profile values omitted.
 - Case record Markdown and case-history summary verification: `ok`, official case number included, lookup-password stored status reported, and lookup password value omitted.

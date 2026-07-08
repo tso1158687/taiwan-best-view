@@ -258,6 +258,11 @@ async function main() {
   assert(readyReadinessReport.reviewItems.some((item) => item.id === "occurred_at" && item.status === "older_than_review_window"), "Expected readiness gate to flag old violation time for review.");
   assert(readyReadinessReport.reviewItems.some((item) => item.id === "photo_analysis" && item.status === "candidate_confirmed_by_user"), "Expected field review to confirm photo analysis candidate.");
   const readyTaipeiPlan = createTaipeiAutomationPlan(readyPacket);
+  const taipeiPlanFixture = await runPlanFixture({
+    jurisdiction: "taipei",
+    packet: readyPacket,
+    plan: readyTaipeiPlan,
+  });
   const taipeiPrototypeWithoutReadiness = await createPrototypeRun({
     plan: readyTaipeiPlan,
     allowNetwork: true,
@@ -267,15 +272,16 @@ async function main() {
     allowNetwork: true,
     readinessReport: noPreflightReadinessReport,
   });
-  const taipeiPrototypeWithReadiness = await createPrototypeRun({
+  const taipeiPrototypeWithoutPlanFixture = await createPrototypeRun({
     plan: readyTaipeiPlan,
     allowNetwork: true,
     readinessReport: readyReadinessReport,
   });
-  const taipeiPlanFixture = await runPlanFixture({
-    jurisdiction: "taipei",
-    packet: readyPacket,
+  const taipeiPrototypeWithReadiness = await createPrototypeRun({
     plan: readyTaipeiPlan,
+    allowNetwork: true,
+    readinessReport: readyReadinessReport,
+    planFixtureReport: taipeiPlanFixture,
   });
   assert(readyTaipeiPlan.status === "ready_until_email_verification", "Expected reviewed Taipei plan to be ready up to Email verification.");
   assert(readyTaipeiPlan.steps.some((item) => item.id === "review_pre_submit_summary" && item.requiresHuman), "Expected Taipei pre-submit review stop.");
@@ -288,8 +294,11 @@ async function main() {
   assert(taipeiPlanFixture.finalSubmitTriggered === false, "Expected Taipei plan fixture not to submit.");
   assert(taipeiPrototypeWithoutReadiness.status === "blocked_by_readiness_report", "Expected live Taipei prototype to require a readiness report.");
   assert(taipeiPrototypeWithStaleReadiness.status === "blocked_by_readiness_report", "Expected live Taipei prototype to reject missing official preflight readiness.");
+  assert(taipeiPrototypeWithoutPlanFixture.status === "blocked_by_plan_fixture_report", "Expected live Taipei prototype to require a plan fixture report.");
   assert(taipeiPrototypeWithReadiness.status === "ready_for_guarded_browser", "Expected live Taipei prototype to pass with fresh readiness report.");
   assert(taipeiPrototypeWithReadiness.readinessGate.status === "ok", "Expected live Taipei prototype readiness gate to pass.");
+  assert(taipeiPrototypeWithReadiness.planFixtureGate.status === "ok", "Expected live Taipei prototype plan fixture gate to pass.");
+  assert(taipeiPrototypeWithReadiness.guardedHandoff.firstHumanStop.id === "stop_before_email_verification", "Expected Taipei handoff to identify the first human stop.");
   await writeFile(join(report.caseDirectory, "submission-packet.json"), `${JSON.stringify(readyPacket, null, 2)}\n`);
   await writeFile(join(report.caseDirectory, "taipei-automation-plan.json"), `${JSON.stringify(readyTaipeiPlan, null, 2)}\n`);
   await writeFile(join(report.caseDirectory, "case-readiness-report.json"), `${JSON.stringify(readyReadinessReport, null, 2)}\n`);
@@ -342,6 +351,11 @@ async function main() {
     now: readinessNow,
   });
   const readyNewTaipeiPlan = createNewTaipeiAutomationPlan(readyNewTaipeiPacket);
+  const newTaipeiPlanFixture = await runPlanFixture({
+    jurisdiction: "new_taipei",
+    packet: readyNewTaipeiPacket,
+    plan: readyNewTaipeiPlan,
+  });
   const newTaipeiPrototypeWithoutReadiness = await createPrototypeRun({
     plan: readyNewTaipeiPlan,
     allowNetwork: true,
@@ -351,15 +365,16 @@ async function main() {
     allowNetwork: true,
     readinessReport: readyReadinessReport,
   });
-  const newTaipeiPrototypeWithReadiness = await createPrototypeRun({
+  const newTaipeiPrototypeWithoutPlanFixture = await createPrototypeRun({
     plan: readyNewTaipeiPlan,
     allowNetwork: true,
     readinessReport: readyNewTaipeiReadinessReport,
   });
-  const newTaipeiPlanFixture = await runPlanFixture({
-    jurisdiction: "new_taipei",
-    packet: readyNewTaipeiPacket,
+  const newTaipeiPrototypeWithReadiness = await createPrototypeRun({
     plan: readyNewTaipeiPlan,
+    allowNetwork: true,
+    readinessReport: readyNewTaipeiReadinessReport,
+    planFixtureReport: newTaipeiPlanFixture,
   });
   assert(readyNewTaipeiPacket.status === "ready_for_human_review", "Expected reviewed New Taipei packet to be ready.");
   assert(readyNewTaipeiReadinessReport.status === "ready_for_human_review", "Expected reviewed New Taipei readiness report to be ready.");
@@ -373,8 +388,11 @@ async function main() {
   assert(newTaipeiPrototypeWithTaipeiReadiness.status === "blocked_by_readiness_report", "Expected live New Taipei prototype to reject Taipei readiness report.");
   assert(newTaipeiPrototypeWithTaipeiReadiness.readinessGate.issues.includes("readiness_report.jurisdiction_mismatch"), "Expected cross-jurisdiction readiness report mismatch issue.");
   assert(newTaipeiPrototypeWithTaipeiReadiness.readinessGate.issues.includes("readiness_report.official_url_mismatch"), "Expected cross-official-url readiness report mismatch issue.");
+  assert(newTaipeiPrototypeWithoutPlanFixture.status === "blocked_by_plan_fixture_report", "Expected live New Taipei prototype to require a plan fixture report.");
   assert(newTaipeiPrototypeWithReadiness.status === "ready_for_guarded_browser", "Expected live New Taipei prototype to pass with matching readiness report.");
   assert(newTaipeiPrototypeWithReadiness.readinessGate.status === "ok", "Expected live New Taipei prototype readiness gate to pass.");
+  assert(newTaipeiPrototypeWithReadiness.planFixtureGate.status === "ok", "Expected live New Taipei prototype plan fixture gate to pass.");
+  assert(newTaipeiPrototypeWithReadiness.guardedHandoff.firstHumanStop.id === "stop_before_disclaimer", "Expected New Taipei handoff to identify the first human stop.");
   const newTaipeiFixtureFill = await runFixtureFill({
     jurisdiction: "new_taipei",
     packet: await createReviewedPacketForFixture(newTaipeiPacket),
@@ -493,6 +511,7 @@ async function main() {
     taipeiSelectorFieldCount: taipeiPrototype.selectorValidation.fieldCount,
     taipeiPlanFixtureStatus: taipeiPlanFixture.status,
     taipeiPlanFixtureStoppedAt: taipeiPlanFixture.stoppedAtStepId,
+    taipeiPrototypeWithoutPlanFixtureStatus: taipeiPrototypeWithoutPlanFixture.status,
     taipeiFixtureFillStatus: taipeiFixtureFill.status,
     taipeiFixtureFilledFields: taipeiFixtureFill.filledFieldCount,
     taipeiFixtureUploadedAttachments: taipeiFixtureFill.uploadedAttachmentCount,
@@ -501,6 +520,7 @@ async function main() {
     newTaipeiPrototypeStatus: newTaipeiPrototype.status,
     newTaipeiPrototypeWithoutReadinessStatus: newTaipeiPrototypeWithoutReadiness.status,
     newTaipeiPrototypeWithTaipeiReadinessStatus: newTaipeiPrototypeWithTaipeiReadiness.status,
+    newTaipeiPrototypeWithoutPlanFixtureStatus: newTaipeiPrototypeWithoutPlanFixture.status,
     newTaipeiPrototypeWithReadinessStatus: newTaipeiPrototypeWithReadiness.status,
     newTaipeiSelectorFieldCount: newTaipeiSelectors.fieldCount,
     newTaipeiPlanFixtureStatus: newTaipeiPlanFixture.status,

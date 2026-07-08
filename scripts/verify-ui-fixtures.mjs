@@ -220,12 +220,12 @@ async function main() {
       id: "open_guarded_browser",
       title: "Open the guarded browser flow",
       reason: "The case is ready for human-reviewed official-site entry.",
-      command: "npm run taipei:prototype -- cases/case-ui-fixture/taipei-automation-plan.json --readiness-report cases/case-ui-fixture/case-readiness-report.json --allow-network",
+      command: "npm run taipei:prototype -- cases/case-ui-fixture/taipei-automation-plan.json --readiness-report cases/case-ui-fixture/case-readiness-report.json --plan-fixture-report cases/case-ui-fixture/taipei-plan-fixture-report.json --allow-network",
       requiresHuman: true,
     },
     nextCommands: [
       "npm run fixture:plan -- cases/case-ui-fixture/submission-packet.json cases/case-ui-fixture/taipei-automation-plan.json",
-      "npm run taipei:prototype -- cases/case-ui-fixture/taipei-automation-plan.json --readiness-report cases/case-ui-fixture/case-readiness-report.json --allow-network",
+      "npm run taipei:prototype -- cases/case-ui-fixture/taipei-automation-plan.json --readiness-report cases/case-ui-fixture/case-readiness-report.json --plan-fixture-report cases/case-ui-fixture/taipei-plan-fixture-report.json --allow-network",
       "npm run export:case-record -- cases/case-ui-fixture/case-record.json",
     ],
   };

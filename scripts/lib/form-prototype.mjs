@@ -37,6 +37,10 @@ function readyStepsBeforeHumanStop(plan) {
   return ready;
 }
 
+function firstHumanStop(plan) {
+  return (plan.steps || []).find((step) => step.requiresHuman || step.action === "stop") || null;
+}
+
 export async function loadAutomationPlan(planPath) {
   return JSON.parse(await readFile(planPath, "utf8"));
 }
@@ -82,10 +86,83 @@ function summarizeReadinessReport({ plan, readinessReport }) {
   };
 }
 
-export async function createPrototypeRun({ plan, allowNetwork = false, readinessReport = null }) {
+function summarizePlanFixtureReport({ plan, planFixtureReport }) {
+  const expectedStop = firstHumanStop(plan);
+  if (!planFixtureReport) {
+    return {
+      status: "not_provided",
+      jurisdiction: "",
+      stoppedAtStepId: "",
+      issues: ["plan_fixture_report.missing"],
+    };
+  }
+
+  const issues = [];
+  if (planFixtureReport.jurisdiction !== plan.jurisdiction) {
+    issues.push("plan_fixture_report.jurisdiction_mismatch");
+  }
+  if (planFixtureReport.status !== "stopped_at_human_gate") {
+    issues.push("plan_fixture_report.not_stopped_at_human_gate");
+  }
+  if (expectedStop?.id && planFixtureReport.stoppedAtStepId !== expectedStop.id) {
+    issues.push("plan_fixture_report.first_stop_mismatch");
+  }
+  if (planFixtureReport.finalSubmitTriggered !== false) {
+    issues.push("plan_fixture_report.final_submit_triggered");
+  }
+  if (planFixtureReport.humanStopTriggered !== false) {
+    issues.push("plan_fixture_report.human_stop_clicked");
+  }
+  if (planFixtureReport.officialUrlContacted !== false) {
+    issues.push("plan_fixture_report.official_url_contacted");
+  }
+
+  return {
+    status: issues.length === 0 ? "ok" : "needs_recheck",
+    jurisdiction: planFixtureReport.jurisdiction || "",
+    stoppedAtStepId: planFixtureReport.stoppedAtStepId || "",
+    expectedFirstHumanStopId: expectedStop?.id || "",
+    issues,
+  };
+}
+
+function createGuardedHandoff({ plan, readinessGate, planFixtureGate }) {
+  const stop = firstHumanStop(plan);
+  return {
+    status: readinessGate.status === "ok" && planFixtureGate.status === "ok" ? "ready" : "not_ready",
+    officialUrl: plan.officialUrl,
+    firstHumanStop: stop
+      ? {
+          id: stop.id,
+          title: stop.title,
+          action: stop.action,
+          stopReason: stop.stopReason,
+        }
+      : null,
+    readyStepsBeforeFirstHumanStop: readyStepsBeforeHumanStop(plan),
+    requiredBeforeOpen: [
+      "case-readiness-report.json must be ready and match this jurisdiction.",
+      "plan fixture report must stop at the same first human gate without triggering submission or contacting official URLs.",
+      "User must personally verify case facts, reporter data, attachments, and official declarations.",
+    ],
+    afterManualSubmission: [
+      "Record official case number, optional lookup password, and submitted time with update:case-record.",
+      "Export case-record-summary.md for local archive review.",
+      "Keep CAPTCHA, Email verification, declarations, and final submit manual.",
+    ],
+  };
+}
+
+export async function createPrototypeRun({
+  plan,
+  allowNetwork = false,
+  readinessReport = null,
+  planFixtureReport = null,
+}) {
   const playwrightAvailable = packageAvailable("playwright");
   const selectorValidation = validateSelectorManifest(plan.jurisdiction);
   const readinessGate = summarizeReadinessReport({ plan, readinessReport });
+  const planFixtureGate = summarizePlanFixtureReport({ plan, planFixtureReport });
   const missingData = [
     ...(plan.missingCaseFields || []),
     ...(plan.missingReporterFields || []),
@@ -105,7 +182,10 @@ export async function createPrototypeRun({ plan, allowNetwork = false, readiness
     emailBypass: false,
     selectorValidation,
     readinessGate,
+    planFixtureGate,
+    guardedHandoff: createGuardedHandoff({ plan, readinessGate, planFixtureGate }),
     readyStepsBeforeFirstHumanStop: readyStepsBeforeHumanStop(plan),
+    firstHumanStop: firstHumanStop(plan),
     manualStopIds: manualStopIds(plan),
     blockedSteps: blockedSteps(plan),
     missing: missingData,
@@ -128,6 +208,13 @@ export async function createPrototypeRun({ plan, allowNetwork = false, readiness
     result.status = "blocked_by_readiness_report";
     result.notes.push("Prototype refused to open the official site because the case-readiness report is missing or not ready.");
     result.notes.push("Run review:case with a fresh read-only official preflight, then pass --readiness-report.");
+    return result;
+  }
+
+  if (planFixtureGate.status !== "ok") {
+    result.status = "blocked_by_plan_fixture_report";
+    result.notes.push("Prototype refused to open the official site because the local plan fixture report is missing or does not stop safely.");
+    result.notes.push("Run fixture:plan, then pass --plan-fixture-report.");
     return result;
   }
 

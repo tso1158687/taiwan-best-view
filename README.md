@@ -124,11 +124,12 @@ npm run new-taipei:dry-run -- cases/<case-id>/submission-packet.json
 Run guarded official-site prototypes only after readiness review has passed:
 
 ```sh
-npm run taipei:prototype -- cases/<case-id>/taipei-automation-plan.json --readiness-report cases/<case-id>/case-readiness-report.json --allow-network
-npm run new-taipei:prototype -- cases/<case-id>/new-taipei-automation-plan.json --readiness-report cases/<case-id>/case-readiness-report.json --allow-network
+npm run taipei:prototype -- cases/<case-id>/taipei-automation-plan.json --readiness-report cases/<case-id>/case-readiness-report.json --plan-fixture-report cases/<case-id>/taipei-plan-fixture-report.json --allow-network
+npm run new-taipei:prototype -- cases/<case-id>/new-taipei-automation-plan.json --readiness-report cases/<case-id>/case-readiness-report.json --plan-fixture-report cases/<case-id>/new-taipei-plan-fixture-report.json --allow-network
 ```
 
-The prototype commands refuse `--allow-network` runs unless the readiness report says the case can open the official site for human review. That requires complete local data, a fresh matching read-only official preflight, and a readiness report whose jurisdiction and official URL match the automation plan.
+The prototype commands refuse `--allow-network` runs unless the readiness report says the case can open the official site for human review and the plan fixture report proves the guarded plan stops at the expected first human gate. That requires complete local data, a fresh matching read-only official preflight, a matching readiness report, and a matching plan fixture report.
+The generated prototype report includes a guarded handoff summary with the first human stop and post-submission record commands.
 
 Run read-only live official-site preflights:
 

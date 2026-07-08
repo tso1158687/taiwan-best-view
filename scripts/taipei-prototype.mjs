@@ -4,7 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { createPrototypeRun, loadAutomationPlan } from "./lib/form-prototype.mjs";
 
 function usage() {
-  console.log("Usage: node scripts/taipei-prototype.mjs <taipei-automation-plan.json> [--readiness-report case-readiness-report.json] [--allow-network]");
+  console.log("Usage: node scripts/taipei-prototype.mjs <taipei-automation-plan.json> [--readiness-report case-readiness-report.json] [--plan-fixture-report taipei-plan-fixture-report.json] [--allow-network]");
   console.log("");
   console.log("Runs a guarded Taipei prototype preflight. It never submits, bypasses verification, or launches a browser unless --allow-network and a ready readiness report are provided.");
 }
@@ -14,6 +14,7 @@ function parseArgs(argv) {
     planArg: argv[2],
     allowNetwork: false,
     readinessReportPath: "",
+    planFixtureReportPath: "",
   };
 
   for (let index = 3; index < argv.length; index += 1) {
@@ -23,6 +24,9 @@ function parseArgs(argv) {
     } else if (arg === "--readiness-report") {
       result.readinessReportPath = argv[index + 1] || "";
       index += 1;
+    } else if (arg === "--plan-fixture-report") {
+      result.planFixtureReportPath = argv[index + 1] || "";
+      index += 1;
     }
   }
 
@@ -30,7 +34,7 @@ function parseArgs(argv) {
 }
 
 async function main() {
-  const { planArg, allowNetwork, readinessReportPath } = parseArgs(process.argv);
+  const { planArg, allowNetwork, readinessReportPath, planFixtureReportPath } = parseArgs(process.argv);
   if (!planArg || planArg === "--help" || planArg === "-h") {
     usage();
     return;
@@ -44,11 +48,15 @@ async function main() {
   const readinessReport = readinessReportPath
     ? JSON.parse(await readFile(resolve(readinessReportPath), "utf8"))
     : null;
+  const planFixtureReport = planFixtureReportPath
+    ? JSON.parse(await readFile(resolve(planFixtureReportPath), "utf8"))
+    : null;
 
   const result = await createPrototypeRun({
     plan,
     allowNetwork,
     readinessReport,
+    planFixtureReport,
   });
   const outputPath = join(dirname(planPath), "taipei-prototype-run.json");
   await writeFile(outputPath, `${JSON.stringify(result, null, 2)}\n`);
