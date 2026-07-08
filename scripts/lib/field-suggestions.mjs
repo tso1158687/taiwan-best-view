@@ -31,6 +31,9 @@ function locationCandidateAddressNote(candidate) {
   if (candidate.source === "confirmed_location") {
     return candidate.addressNote || candidate.label;
   }
+  if (candidate.source === "ocr_text") {
+    return `OCR 線索：${candidate.addressNote || candidate.label}`;
+  }
   if (candidate.reverseGeocode?.status === "ok" && candidate.addressLabel) {
     return `GPS 反查 ${candidate.addressLabel}`;
   }
@@ -59,7 +62,9 @@ export function createFieldSuggestions({ photoAnalysis, locationAssistance }) {
     ...(locationAssistance?.candidates || []).map((candidate) => ({
       field: "addressNote",
       value: locationCandidateAddressNote(candidate),
-      source: candidate.source === "confirmed_location" ? "confirmed_location" : "exif_gps",
+      source: candidate.source === "confirmed_location"
+        ? "confirmed_location"
+        : candidate.source === "ocr_text" ? "ocr_location_text" : "exif_gps",
       confidence: candidate.source === "confirmed_location" ? 0.7 : 0.5,
       evidence: candidate.evidenceFiles.join(", "),
       maps: candidate.maps,

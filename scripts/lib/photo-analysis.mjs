@@ -33,13 +33,14 @@ function collectPlateCandidates(items) {
   return [...candidates.values()].sort((a, b) => b.confidence - a.confidence);
 }
 
-function collectLocationTextCandidates(items) {
-  return items
-    .filter((item) => LOCATION_KEYWORDS.some((keyword) => item.text.includes(keyword)))
-    .map((item) => ({
+function collectLocationTextCandidates(results) {
+  return results
+    .flatMap((result) => (result.items || []).map((item) => ({
       text: item.text,
       confidence: item.confidence,
-    }))
+      fileName: result.fileName,
+    })))
+    .filter((item) => LOCATION_KEYWORDS.some((keyword) => item.text.includes(keyword)))
     .sort((a, b) => b.confidence - a.confidence);
 }
 
@@ -79,7 +80,7 @@ export async function analyzePhotos(imagePaths) {
       engine: "apple_vision",
       results,
       plateCandidates: collectPlateCandidates(allItems),
-      locationTextCandidates: collectLocationTextCandidates(allItems),
+      locationTextCandidates: collectLocationTextCandidates(results),
     };
   } catch (error) {
     return {

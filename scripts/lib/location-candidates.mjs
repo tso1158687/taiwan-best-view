@@ -6,6 +6,20 @@ function hasGps(attachment) {
   return typeof attachment.latitude === "number" && typeof attachment.longitude === "number";
 }
 
+function uniqueOcrLocationCandidates(candidates) {
+  const seen = new Set();
+  const unique = [];
+
+  for (const candidate of candidates) {
+    const key = candidate.text;
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(candidate);
+  }
+
+  return unique;
+}
+
 export function createLocationCandidates(attachments) {
   const gpsAttachments = attachments.filter(hasGps);
   const missingGpsAttachments = attachments
@@ -36,5 +50,34 @@ export function createLocationCandidates(attachments) {
     candidates,
     missingGpsAttachments,
     status: candidates.length > 0 ? "needs_review" : "manual_required",
+  };
+}
+
+export function createOcrLocationCandidates(photoAnalysis) {
+  const candidates = uniqueOcrLocationCandidates(photoAnalysis?.locationTextCandidates || []);
+
+  return candidates.map((candidate) => ({
+    source: "ocr_text",
+    confidence: "needs_review",
+    confidenceScore: candidate.confidence,
+    label: candidate.text,
+    addressNote: candidate.text,
+    evidenceFiles: candidate.fileName ? [candidate.fileName] : [],
+    maps: {},
+    note: "OCR text is a location clue only. Confirm the exact district, road, address, and direction from the photo evidence.",
+  }));
+}
+
+export function mergeOcrLocationCandidates({ locationAssistance, candidates }) {
+  const mergedCandidates = [
+    ...(locationAssistance.candidates || []),
+    ...candidates,
+  ];
+
+  return {
+    ...locationAssistance,
+    candidates: mergedCandidates,
+    ocrLocationCandidateCount: candidates.length,
+    status: mergedCandidates.length > 0 ? "needs_review" : locationAssistance.status,
   };
 }

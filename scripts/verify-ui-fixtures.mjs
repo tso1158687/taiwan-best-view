@@ -285,6 +285,16 @@ async function main() {
           },
           note: "GPS only; user must verify.",
         },
+        {
+          source: "ocr_text",
+          confidence: "needs_review",
+          confidenceScore: 0.7,
+          label: "傳品牛排",
+          addressNote: "傳品牛排",
+          evidenceFiles: ["IMG_2631.HEIC"],
+          maps: {},
+          note: "OCR text location clue fixture.",
+        },
       ],
     },
     photoAnalysis: {
@@ -406,13 +416,16 @@ async function main() {
     const importedAttachmentText = await visibleText(page, "#fileList");
     assert(importedAttachmentText.includes("已轉檔，EXIF 已驗證"), "Expected converted imported attachment EXIF status to render.");
     assert(importedAttachmentText.includes("待轉檔"), "Expected pending HEIC imported attachment status to render.");
+    const locationText = await visibleText(page, "#locationPanel");
+    assert(locationText.includes("OCR 文字"), "Expected OCR location candidate source to render.");
+    assert(locationText.includes("傳品牛排"), "Expected OCR location candidate label to render.");
     const photoAnalysisText = await visibleText(page, "#photoAnalysisPanel");
     assert(photoAnalysisText.includes("需人工確認"), "Expected photo analysis panel to show manual review state.");
     assert(photoAnalysisText.includes("3999-YG (92%)"), "Expected OCR plate confidence percentage to render.");
     assert(photoAnalysisText.includes("complete plate shape"), "Expected OCR confidence reason to render.");
     const suggestionText = await visibleText(page, "#suggestionsPanel");
     assert(suggestionText.includes("3999-YG (92%)"), "Expected field suggestion confidence percentage to render.");
-    await page.getByRole("button", { name: "採用候選" }).click();
+    await page.getByRole("listitem").filter({ hasText: "25.022475, 121.426317" }).getByRole("button", { name: "採用候選" }).click();
     const draft = await page.evaluate(() => window.taiwanBestView.currentDraft());
     assert(typeof draft.createdAt === "string" && draft.createdAt.length > 0, "Expected UI draft to include createdAt.");
     assert(draft.district === "新莊區", "Expected selected location candidate to fill district.");

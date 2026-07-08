@@ -63,7 +63,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T174140`
+- `cases/case-20260708T175047`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -74,6 +74,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - Plate candidates: `3999-YG`, `3999-B`
 - Plate candidate patterns: `four_digits_two_letters`, `four_digits_one_letter_incomplete`
 - Location text candidates: `傳品牛排`
+- OCR location candidate: `傳品牛排`
 - Taipei local fixture fill: `ok`, 15 fields filled, 2 attachments uploaded, no final submit.
 - New Taipei local fixture fill: `ok`, 19 fields filled, 2 attachments uploaded, no final submit.
 - UI fixture verification: `ok`
@@ -92,6 +93,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - Photo analysis UI verification: `ok`, OCR confidence percentages and confidence reasons render for manual review.
 - Attachment status UI verification: `ok`, imported drafts show converted EXIF-verified attachments and pending conversion attachments.
 - Confirmed frequent-location candidate verification: `ok`
+- OCR location candidate verification: `ok`, OCR location text is available as a review-only location candidate.
 - Reporter-profile fixture status: `ready`
 - Encrypted reporter-profile fixture verification: `ok`, encrypted envelope does not contain fixture identity number or email plaintext.
 - Reviewed packet status with complete fixture-only case and reporter fields: `ready_for_human_review`

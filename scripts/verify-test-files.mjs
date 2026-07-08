@@ -47,6 +47,7 @@ async function main() {
   assert(report.occurredAtCandidate === "2026-06-12T15:32:11+08:00", "Unexpected occurred-at candidate.");
   assert(report.locationAssistance.status === "needs_review", "Expected location assistance to need review.");
   assert(report.locationAssistance.candidates.length >= 1, "Expected at least one GPS candidate.");
+  assert(report.locationAssistance.candidates.some((candidate) => candidate.source === "ocr_text" && candidate.label === "傳品牛排"), "Expected OCR location text candidate.");
   assert(["ok", "unavailable"].includes(report.locationAssistance.reverseGeocodeStatus), "Expected reverse geocode to be attempted for GPS candidates.");
   assert(report.locationAssistance.missingGpsAttachments.includes("IMG_2630.HEIC"), "Expected IMG_2630.HEIC to be listed as missing GPS.");
   assert(report.photoAnalysis.status === "ok", "Expected OCR photo analysis to succeed.");
@@ -58,6 +59,7 @@ async function main() {
   assert(report.fieldSuggestions.status === "needs_review", "Expected field suggestions to need review.");
   assert(report.fieldSuggestions.plate.length >= 1, "Expected at least one plate field suggestion.");
   assert(report.fieldSuggestions.addressNote.length >= 1, "Expected at least one address note field suggestion.");
+  assert(report.fieldSuggestions.addressNote.some((suggestion) => suggestion.value === "OCR 線索：傳品牛排"), "Expected OCR location text address-note suggestion.");
 
   for (const fileName of report.submissionFiles) {
     await assertFile(join(report.caseDirectory, "converted", fileName));
@@ -411,6 +413,7 @@ async function main() {
     caseDirectory: report.caseDirectory,
     occurredAtCandidate: report.occurredAtCandidate,
     locationCandidates: report.locationAssistance.candidates.length,
+    ocrLocationCandidates: report.locationAssistance.candidates.filter((candidate) => candidate.source === "ocr_text").map((candidate) => candidate.label),
     reverseGeocodeStatus: report.locationAssistance.reverseGeocodeStatus,
     reverseGeocodeLabels: report.locationAssistance.candidates
       .map((candidate) => candidate.addressLabel)

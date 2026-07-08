@@ -12,7 +12,11 @@ import {
   sipsDateToTaiwanIso,
 } from "./lib/metadata.mjs";
 import { convertHeicOne } from "./lib/heic-conversion.mjs";
-import { createLocationCandidates } from "./lib/location-candidates.mjs";
+import {
+  createLocationCandidates,
+  createOcrLocationCandidates,
+  mergeOcrLocationCandidates,
+} from "./lib/location-candidates.mjs";
 import { enrichLocationCandidatesWithReverseGeocode } from "./lib/reverse-geocode.mjs";
 import { analyzePhotos } from "./lib/photo-analysis.mjs";
 import { createFieldSuggestions } from "./lib/field-suggestions.mjs";
@@ -188,18 +192,22 @@ async function main() {
       .map((attachment) => attachment.submissionPath)
   );
   const gpsLocationAssistance = await enrichLocationCandidatesWithReverseGeocode(createLocationCandidates(attachments));
-  let locationAssistance = gpsLocationAssistance;
+  const ocrLocationCandidates = createOcrLocationCandidates(photoAnalysis);
+  let locationAssistance = mergeOcrLocationCandidates({
+    locationAssistance: gpsLocationAssistance,
+    candidates: ocrLocationCandidates,
+  });
 
   if (options.confirmedLocationsPath) {
     const confirmedLocationLibrary = await readConfirmedLocationLibrary(options.confirmedLocationsPath);
     const confirmedLocationCandidates = createConfirmedLocationCandidates({
       library: confirmedLocationLibrary,
       jurisdiction: options.jurisdiction,
-      locationAssistance: gpsLocationAssistance,
+      locationAssistance,
       photoAnalysis,
     });
     locationAssistance = mergeConfirmedLocationCandidates({
-      locationAssistance: gpsLocationAssistance,
+      locationAssistance,
       candidates: confirmedLocationCandidates,
     });
   }

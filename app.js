@@ -373,6 +373,9 @@ function candidateAddressNote(candidate) {
   if (candidate.source === "confirmed_location") {
     return candidate.addressNote || candidate.label;
   }
+  if (candidate.source === "ocr_text") {
+    return `OCR 線索：${candidate.addressNote || candidate.label}`;
+  }
   if (candidate.reverseGeocode?.status === "ok" && candidate.addressLabel) {
     return `GPS 反查 ${candidate.addressLabel}`;
   }
@@ -854,7 +857,9 @@ function renderLocationAssistance(locationAssistance) {
     title.className = "location-title";
     title.textContent = candidate.label;
     meta.className = "location-meta";
-    const sourceLabel = candidate.source === "confirmed_location" ? "常用地點" : "GPS";
+    const sourceLabel = candidate.source === "confirmed_location"
+      ? "常用地點"
+      : candidate.source === "ocr_text" ? "OCR 文字" : "GPS";
     const reasonText = Array.isArray(candidate.matchReasons) && candidate.matchReasons.length > 0
       ? `；命中：${candidate.matchReasons.join("、")}`
       : "";
