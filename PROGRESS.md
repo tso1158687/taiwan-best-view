@@ -1,6 +1,6 @@
 # Project Progress
 
-Updated: 2026-07-08
+Updated: 2026-07-09
 
 ## Current State
 
@@ -28,6 +28,7 @@ The project is published as a public GitHub repository:
 - OCR plate normalization, confidence scoring, confidence reasons, and official form splitting.
 - Field suggestions for plate, district, road, and address note.
 - Submission packet generation for Taipei and New Taipei.
+- Real-case readiness reports that gate official-site opening on complete local case and reporter data.
 - Local reporter profile validation and submission-packet integration.
 - Guarded automation plans that stop before CAPTCHA, Email verification, declarations, and final submit.
 - Official selector manifests for Taipei and New Taipei.
@@ -47,12 +48,13 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 - `npm run verify:test-files`
 - `npm run inspect:metadata`
 - `npm run verify:plate`
+- `npm run verify:readiness`
 - `npm run official:preflight -- taipei --allow-network --json cases/taipei-live-preflight.json`
 - `npm run official:preflight -- new_taipei --allow-network --json cases/new-taipei-live-preflight.json`
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T155711`
+- `cases/case-20260708T160430`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -69,6 +71,8 @@ Important observed results from the real `test-files/` HEIC photos:
 - Location candidate confirmation UI verification: `ok`
 - Reporter-profile fixture status: `ready`
 - Reviewed packet status with complete fixture-only case and reporter fields: `ready_for_human_review`
+- Case readiness gate with incomplete real-case fields: `needs_missing_data`, official-site opening blocked.
+- Case readiness gate with complete fixture-only case and reporter fields: `ready_for_human_review`, official-site opening allowed for human review only.
 - Metadata embedding statuses on this machine: `sidecar_only`, `sidecar_only`
 - Latest Taipei official preflight: `ok`, 6 present selectors, 3 deferred selectors, 0 missing selectors.
 - Latest New Taipei official preflight: `ok`, 20 present selectors, 0 missing selectors.
@@ -88,6 +92,7 @@ Important observed results from the real `test-files/` HEIC photos:
 
 1. For a real case, fill missing case fields and reporter profile, then run guarded dry-run/prototype commands before manually completing official verification and final submit.
 2. Keep re-running read-only official preflights before real assisted submission because official sites can change selectors.
+3. Run `npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.json` before any live official-site run.
 
 ## Resume Checklist
 
@@ -98,6 +103,7 @@ git status --short --branch --ignored
 npm run check
 npm run inspect:metadata
 npm run verify:plate
+npm run verify:readiness
 npm run verify:ui
 ```
 

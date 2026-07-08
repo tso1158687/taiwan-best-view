@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { pathExists, run } from "./lib/system.mjs";
 import { readSipsMetadata } from "./lib/metadata.mjs";
 import { createSubmissionPacket } from "./lib/submission-packet.mjs";
+import { createCaseReadinessReport } from "./lib/case-readiness.mjs";
 import { createTaipeiAutomationPlan } from "./lib/taipei-automation-plan.mjs";
 import { createPrototypeRun } from "./lib/form-prototype.mjs";
 import { createNewTaipeiAutomationPlan } from "./lib/new-taipei-automation-plan.mjs";
@@ -68,11 +69,15 @@ async function main() {
 
   const draft = JSON.parse(await readFile(join(report.caseDirectory, "draft.json"), "utf8"));
   const packet = await createSubmissionPacket({ draft });
+  const readinessReport = await createCaseReadinessReport({ draft, draftPath: join(report.caseDirectory, "draft.json") });
   assert(packet.official.url === "https://prsweb.tcpd.gov.tw/", "Expected Taipei official URL.");
   assert(packet.attachments.length === 2, "Expected packet attachment count.");
   assert(packet.missing.includes("case.plate"), "Expected plate to remain missing until human confirmation.");
   assert(packet.missing.includes("reporter.name"), "Expected reporter data to remain missing.");
   assert(packet.official.stopBefore.includes("final_submit"), "Expected final submit stop boundary.");
+  assert(readinessReport.status === "needs_missing_data", "Expected readiness gate to report missing real-case data.");
+  assert(readinessReport.canOpenOfficialSiteForHumanReview === false, "Expected readiness gate to block official-site opening until data is complete.");
+  assert(readinessReport.stopBefore.includes("final_submit"), "Expected readiness gate to preserve final submit boundary.");
   const reporterProfile = {
     identityType: "national_id",
     identityNumber: "A123456789",
@@ -97,9 +102,17 @@ async function main() {
     addressNote: "傳品牛排附近，實際位置仍需人工確認",
   };
   const readyPacket = await createSubmissionPacket({ draft: reviewedDraft, reporterProfile });
+  const readyReadinessReport = await createCaseReadinessReport({
+    draft: reviewedDraft,
+    reporterProfile,
+    draftPath: join(report.caseDirectory, "draft.json"),
+  });
   assert(readyPacket.status === "ready_for_human_review", "Expected complete reporter profile and reviewed case fields to produce a review-ready packet.");
   assert(readyPacket.missing.length === 0, "Expected no missing fields for review-ready packet.");
   assert(readyPacket.reporterProfile.provided === true, "Expected reporter profile to be marked as provided.");
+  assert(readyReadinessReport.status === "ready_for_human_review", "Expected readiness gate to allow human-reviewed official-site opening after local data is complete.");
+  assert(readyReadinessReport.canOpenOfficialSiteForHumanReview === true, "Expected readiness gate to allow official-site opening only for human review.");
+  assert(readyReadinessReport.finalSubmitAutomated === false, "Expected readiness gate to keep final submit manual.");
   const taipeiPlan = createTaipeiAutomationPlan(packet);
   assert(taipeiPlan.status === "blocked_by_missing_data", "Expected Taipei dry run to be blocked by missing data.");
   assert(taipeiPlan.safety.dryRunOnly === true, "Expected Taipei plan to be dry-run only.");
@@ -180,7 +193,11 @@ async function main() {
     addressNoteSuggestions: report.fieldSuggestions.addressNote.map((suggestion) => suggestion.value),
     submissionPacketStatus: packet.status,
     submissionPacketMissing: packet.missing,
+    caseReadinessStatus: readinessReport.status,
+    caseReadinessCanOpenOfficialSite: readinessReport.canOpenOfficialSiteForHumanReview,
     reviewedPacketStatus: readyPacket.status,
+    reviewedCaseReadinessStatus: readyReadinessReport.status,
+    reviewedCaseReadinessCanOpenOfficialSite: readyReadinessReport.canOpenOfficialSiteForHumanReview,
     reporterProfileSummaryStatus: reporterSummary.status,
     metadataEmbeddingStatuses: converted.map((attachment) => attachment.metadataEmbeddingStatus),
     taipeiDryRunStatus: taipeiPlan.status,

@@ -12,6 +12,7 @@ Taiwan Best View is a local-first helper for preparing Taiwan traffic violation 
 - Attempts macOS CoreLocation reverse geocoding for GPS candidates when available.
 - Lets the user manually adopt a GPS/map candidate into the draft as `locationReview`.
 - Builds submission packets for Taipei and New Taipei.
+- Reviews case readiness before opening official websites for human-reviewed submission.
 - Validates official-site selector manifests and guarded automation stop points.
 - Runs Playwright fixture fills locally without contacting official websites.
 - Records local case status, official case number, lookup password, and correction status after manual submission.
@@ -75,6 +76,15 @@ npm run prepare:submission -- cases/<case-id>/draft.json
 npm run prepare:submission -- cases/<case-id>/draft.json reporter-profile.local.json
 ```
 
+Review whether a case is ready to open on the official website:
+
+```sh
+npm run review:case -- cases/<case-id>/draft.json
+npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.json
+```
+
+This writes `case-readiness-report.json` next to the draft. It reports missing case fields, reporter-profile readiness, attachment and metadata review notes, official human stop points, and the next safe commands. It does not contact official websites.
+
 Generate guarded automation plans:
 
 ```sh
@@ -130,6 +140,12 @@ Plate normalization verification:
 npm run verify:plate
 ```
 
+Real-case readiness gate verification:
+
+```sh
+npm run verify:readiness
+```
+
 ## Current Limits
 
 - The generated PNG submission files are visually rendered and metadata is preserved in draft sidecar data.
@@ -137,5 +153,6 @@ npm run verify:plate
 - GPS and reverse geocoding are only starting points. If Apple CoreLocation times out or returns no placemark, the tool keeps coordinate/map candidates and requires manual confirmation.
 - The location review UI records which candidate the user adopted, but it still does not prove the legal road segment or driving direction.
 - Live official-site automation is guarded and should not proceed until real case data and reporter profile fields are complete.
+- `review:case` can report that local data is ready to open the official site for human review, but CAPTCHA, Email verification, declarations, and final submit remain manual.
 - Taipei's official SPA may time out in headless Playwright even when static resources are reachable; use `official:preflight` as a diagnostic rather than a submission path.
 - Final submission remains manual.
