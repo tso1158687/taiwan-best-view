@@ -44,6 +44,17 @@ function collectLocationTextCandidates(items) {
 }
 
 export async function analyzePhotos(imagePaths) {
+  if (imagePaths.length === 0) {
+    return {
+      status: "skipped",
+      engine: "apple_vision",
+      reason: "no image attachments",
+      results: [],
+      plateCandidates: [],
+      locationTextCandidates: [],
+    };
+  }
+
   if (!(await commandExists("swift"))) {
     return {
       status: "unavailable",

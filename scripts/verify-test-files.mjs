@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { readFile, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathExists, run } from "./lib/system.mjs";
 import { readSipsMetadata } from "./lib/metadata.mjs";
@@ -69,6 +70,18 @@ async function main() {
   assert(converted.every((attachment) => attachment.renderedWidth > 0 && attachment.renderedHeight > 0), "Expected rendered dimensions for both attachments.");
   assert(report.attachments.some((attachment) => attachment.gpsStatus === "present"), "Expected one attachment with GPS.");
   assert(report.attachments.some((attachment) => attachment.gpsStatus === "missing"), "Expected one attachment missing GPS.");
+
+  const videoFixtureDirectory = await mkdtemp(join(tmpdir(), "taiwan-best-view-video-"));
+  await writeFile(join(videoFixtureDirectory, "clip.mp4"), "fixture video bytes");
+  const { stdout: videoStdout } = await run("npm", ["run", "create:case", "--", videoFixtureDirectory, "--jurisdiction", "new_taipei"]);
+  const videoJsonStart = videoStdout.indexOf("{");
+  assert(videoJsonStart >= 0, "video create:case did not print JSON report.");
+  const videoReport = JSON.parse(videoStdout.slice(videoJsonStart));
+  assert(videoReport.inputCount === 1, `Expected 1 video input, got ${videoReport.inputCount}.`);
+  assert(videoReport.submissionFiles.length === 1 && videoReport.submissionFiles[0] === "clip.mp4", "Expected video submission file to be preserved.");
+  assert(videoReport.attachments[0].conversionStatus === "not_required", "Expected video attachment not to require conversion.");
+  assert(videoReport.attachments[0].acceptedByOfficial === true, "Expected New Taipei MP4 attachment to be accepted by official format rules.");
+  assert(videoReport.photoAnalysis.status === "skipped", "Expected photo analysis to skip video-only cases.");
 
   const draft = JSON.parse(await readFile(join(report.caseDirectory, "draft.json"), "utf8"));
   const draftValidation = validateCaseDraft(draft);
@@ -389,6 +402,9 @@ async function main() {
       .map((candidate) => candidate.addressLabel)
       .filter(Boolean),
     missingGpsAttachments: report.locationAssistance.missingGpsAttachments,
+    videoAttachmentStatus: videoReport.attachments[0].conversionStatus,
+    videoAttachmentAcceptedByOfficial: videoReport.attachments[0].acceptedByOfficial,
+    videoOnlyPhotoAnalysisStatus: videoReport.photoAnalysis.status,
     plateCandidates: report.photoAnalysis.plateCandidates.map((candidate) => candidate.text),
     plateCandidatePatterns: report.photoAnalysis.plateCandidates.map((candidate) => candidate.pattern),
     locationTextCandidates: report.photoAnalysis.locationTextCandidates.map((candidate) => candidate.text),

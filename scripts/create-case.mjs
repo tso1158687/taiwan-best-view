@@ -1,8 +1,16 @@
 #!/usr/bin/env node
-import { copyFile, mkdir, readdir, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, stat, writeFile } from "node:fs/promises";
 import { basename, extname, join, resolve } from "node:path";
 import { fileSize, pathExists } from "./lib/system.mjs";
-import { IMAGE_EXTENSIONS, isHeic, readSipsMetadata, sipsDateToTaiwanIso } from "./lib/metadata.mjs";
+import {
+  ATTACHMENT_EXTENSIONS,
+  IMAGE_EXTENSIONS,
+  PHOTO_ANALYSIS_EXTENSIONS,
+  allowedAttachmentExtensionsFor,
+  isHeic,
+  readSipsMetadata,
+  sipsDateToTaiwanIso,
+} from "./lib/metadata.mjs";
 import { convertHeicOne } from "./lib/heic-conversion.mjs";
 import { createLocationCandidates } from "./lib/location-candidates.mjs";
 import { enrichLocationCandidatesWithReverseGeocode } from "./lib/reverse-geocode.mjs";
@@ -49,23 +57,27 @@ function caseIdFromDate(date = new Date()) {
   return `case-${value}`;
 }
 
-async function collectImageInputs(inputPath) {
+async function collectAttachmentInputs(inputPath) {
   const absoluteInput = resolve(inputPath);
   const extension = extname(absoluteInput).toLowerCase();
+  const inputStat = await stat(absoluteInput);
 
-  if (IMAGE_EXTENSIONS.has(extension)) {
-    return [absoluteInput];
+  if (inputStat.isFile()) {
+    return ATTACHMENT_EXTENSIONS.has(extension) ? [absoluteInput] : [];
   }
 
   const entries = await readdir(absoluteInput, { withFileTypes: true });
   return entries
-    .filter((entry) => entry.isFile() && IMAGE_EXTENSIONS.has(extname(entry.name).toLowerCase()))
+    .filter((entry) => entry.isFile() && ATTACHMENT_EXTENSIONS.has(extname(entry.name).toLowerCase()))
     .map((entry) => join(absoluteInput, entry.name));
 }
 
-function createAttachment({ originalPath, originalName, submissionPath, submissionName, size, conversion, metadata }) {
-  const originalExtension = extname(originalName).replace(".", "").toLowerCase();
-  const submissionExtension = extname(submissionName).replace(".", "").toLowerCase();
+function createAttachment({ originalPath, originalName, submissionPath, submissionName, size, conversion, metadata = {}, jurisdiction }) {
+  const originalExtensionWithDot = extname(originalName).toLowerCase();
+  const submissionExtensionWithDot = extname(submissionName).toLowerCase();
+  const originalExtension = originalExtensionWithDot.replace(".", "");
+  const submissionExtension = submissionExtensionWithDot.replace(".", "");
+  const allowedExtensions = allowedAttachmentExtensionsFor(jurisdiction);
 
   return {
     originalName,
@@ -88,16 +100,18 @@ function createAttachment({ originalPath, originalName, submissionPath, submissi
     metadataEmbeddingStatus: conversion?.metadataEmbeddingStatus || "not_applicable",
     metadataEmbeddingTool: conversion?.metadataEmbeddingTool || "",
     metadataEmbeddingError: conversion?.metadataEmbeddingError || "",
-    acceptedByOfficial: ["jpg", "jpeg", "png", "bmp", "tiff"].includes(submissionExtension),
-    verificationSource: conversion?.verificationSource || "sips",
+    acceptedByOfficial: allowedExtensions.has(submissionExtensionWithDot),
+    verificationSource: conversion?.verificationSource || (metadata.creation ? "sips" : "file_extension"),
     note: conversion?.note || "",
   };
 }
 
-async function processOne(inputPath, caseDirectory) {
+async function processOne(inputPath, caseDirectory, jurisdiction) {
   const originalName = basename(inputPath);
   const originalPath = join(caseDirectory, "originals", originalName);
-  const metadata = await readSipsMetadata(inputPath);
+  const extension = extname(inputPath).toLowerCase();
+  const isImage = IMAGE_EXTENSIONS.has(extension);
+  const metadata = isImage ? await readSipsMetadata(inputPath) : {};
   await copyFile(inputPath, originalPath);
 
   if (isHeic(inputPath)) {
@@ -110,6 +124,7 @@ async function processOne(inputPath, caseDirectory) {
       size: await fileSize(originalPath),
       conversion,
       metadata,
+      jurisdiction,
     });
   }
 
@@ -122,6 +137,7 @@ async function processOne(inputPath, caseDirectory) {
     submissionName: originalName,
     size: await fileSize(originalPath),
     metadata,
+    jurisdiction,
   });
 }
 
@@ -149,9 +165,12 @@ async function main() {
     throw new Error(`Input does not exist: ${options.input}`);
   }
 
-  const inputs = await collectImageInputs(options.input);
+  const inputs = await collectAttachmentInputs(options.input);
   if (inputs.length === 0) {
-    throw new Error("No supported image files found.");
+    throw new Error("No supported attachment files found.");
+  }
+  if (inputs.length > 5) {
+    throw new Error(`A case draft can include at most 5 attachments; found ${inputs.length}.`);
   }
 
   const caseDirectory = join(resolve("cases"), caseIdFromDate());
@@ -161,9 +180,13 @@ async function main() {
 
   const attachments = [];
   for (const input of inputs) {
-    attachments.push(await processOne(input, caseDirectory));
+    attachments.push(await processOne(input, caseDirectory, options.jurisdiction));
   }
-  const photoAnalysis = await analyzePhotos(attachments.map((attachment) => attachment.submissionPath));
+  const photoAnalysis = await analyzePhotos(
+    attachments
+      .filter((attachment) => PHOTO_ANALYSIS_EXTENSIONS.has(`.${attachment.submissionExtension}`))
+      .map((attachment) => attachment.submissionPath)
+  );
   const gpsLocationAssistance = await enrichLocationCandidatesWithReverseGeocode(createLocationCandidates(attachments));
   let locationAssistance = gpsLocationAssistance;
 
@@ -236,6 +259,8 @@ async function main() {
       renderedHeight: attachment.renderedHeight,
       metadataEmbeddingStatus: attachment.metadataEmbeddingStatus,
       metadataEmbeddingTool: attachment.metadataEmbeddingTool,
+      acceptedByOfficial: attachment.acceptedByOfficial,
+      verificationSource: attachment.verificationSource,
       note: attachment.note,
     })),
   };

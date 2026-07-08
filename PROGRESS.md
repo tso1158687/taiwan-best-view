@@ -20,6 +20,7 @@ The project is published as a public GitHub repository:
 - Draft validation for core fields, 1-to-5 attachment count, attachment metadata, and saved human-review state.
 - Taipei and New Taipei jurisdiction selection for illegal-parking MVP cases.
 - Attachment validation for official-site-compatible formats.
+- CLI case creation supports official-compatible video attachments; video-only cases skip photo OCR instead of failing.
 - iPhone HEIC/HEIF detection and macOS QuickLook conversion to PNG.
 - Sidecar metadata preservation from the original HEIC files.
 - EXIF-based occurred-at candidate extraction.
@@ -62,7 +63,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T173508`
+- `cases/case-20260708T173840`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -78,6 +79,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - UI fixture verification: `ok`
 - Case draft validation verification: `ok`, generated drafts pass and invalid fixture drafts fail with specific issues, including empty attachment drafts.
 - Empty attachment draft verification: `invalid`, drafts must include 1 to 5 submission attachments.
+- Video attachment verification: `not_required`, New Taipei MP4 fixture accepted by official format rules, and video-only photo analysis skipped.
 - Draft created-at verification: `ok`, CLI and UI drafts preserve `createdAt` separately from `updatedAt`.
 - Review-state validation verification: `ok`, invalid `locationReview` and `fieldReview` fixtures fail with specific issues.
 - Case workflow checklist verification: `ok`, artifact status, recommended next action, and next-command hints generated from local case folders.

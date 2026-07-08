@@ -4,6 +4,50 @@ import { commandExists, run } from "./system.mjs";
 
 export const HEIC_EXTENSIONS = new Set([".heic", ".heif"]);
 export const IMAGE_EXTENSIONS = new Set([".heic", ".heif", ".jpg", ".jpeg", ".png", ".bmp", ".tiff"]);
+export const PHOTO_ANALYSIS_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".bmp", ".tiff"]);
+export const VIDEO_EXTENSIONS = new Set([".mov", ".wmv", ".avi", ".mp4", ".3gp", ".ts", ".flv", ".mpeg", ".mkv"]);
+export const ARCHIVE_EXTENSIONS = new Set([".zip", ".rar"]);
+export const ATTACHMENT_EXTENSIONS = new Set([
+  ...IMAGE_EXTENSIONS,
+  ".gif",
+  ...VIDEO_EXTENSIONS,
+  ...ARCHIVE_EXTENSIONS,
+]);
+export const TAIPEI_ALLOWED_ATTACHMENT_EXTENSIONS = new Set([
+  ".jpeg",
+  ".jpg",
+  ".png",
+  ".bmp",
+  ".tiff",
+  ".mov",
+  ".wmv",
+  ".avi",
+  ".mp4",
+  ".3gp",
+  ".ts",
+]);
+export const NEW_TAIPEI_ALLOWED_ATTACHMENT_EXTENSIONS = new Set([
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".png",
+  ".mp4",
+  ".flv",
+  ".mpeg",
+  ".mkv",
+  ".mov",
+  ".avi",
+  ".wmv",
+  ".zip",
+  ".rar",
+  ".ts",
+]);
+
+export function allowedAttachmentExtensionsFor(jurisdiction) {
+  return jurisdiction === "new_taipei"
+    ? NEW_TAIPEI_ALLOWED_ATTACHMENT_EXTENSIONS
+    : TAIPEI_ALLOWED_ATTACHMENT_EXTENSIONS;
+}
 
 export function isHeic(path) {
   return HEIC_EXTENSIONS.has(extname(path).toLowerCase());

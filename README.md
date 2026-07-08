@@ -4,8 +4,9 @@ Taiwan Best View is a local-first helper for preparing Taiwan traffic violation 
 
 ## What It Does
 
-- Creates local case drafts for Taipei and New Taipei traffic violation reports.
+- Creates local case drafts for Taipei and New Taipei traffic violation reports from photo or video attachments.
 - Validates that each draft has 1 to 5 submission attachments.
+- Keeps official-compatible video attachments as submission files while skipping photo OCR for video-only cases.
 - Preserves draft `createdAt` separately from `updatedAt` for local case tracking.
 - Converts iPhone HEIC/HEIF photos to official-site-compatible PNG files.
 - Preserves original photo metadata in draft sidecar data for time and GPS review.
