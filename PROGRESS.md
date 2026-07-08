@@ -42,7 +42,7 @@ The project is published as a public GitHub repository:
 - Read-only live official-site preflight scripts.
 - Local Playwright fixture fill verification without contacting official websites.
 - Local case record creation, update, and case-history summary.
-- Browser UI import for `case-readiness-report.json`, `case-workflow-checklist.json`, `case-record.json`, and `case-history.json`.
+- Browser UI import for `case-readiness-report.json`, `case-workflow-checklist.json`, `case-record.json`, and `case-history.json`, including lookup-password stored status without exposing the value.
 - Metadata tooling diagnostics for QuickLook and optional exiftool embedding.
 - Public handoff documentation in `README.md` and detailed audit notes in `SELF_AUDIT.md`.
 
@@ -62,7 +62,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T172749`
+- `cases/case-20260708T173230`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -98,7 +98,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - Guarded prototype gate with complete local data and ready readiness report: `ready_for_guarded_browser`.
 - Guarded New Taipei prototype rejects a Taipei readiness report with jurisdiction and official URL mismatch issues.
 - Case readiness Markdown checklist verification: `ok`, reporter-profile values omitted.
-- Case record Markdown summary verification: `ok`, official case number included and lookup password value omitted.
+- Case record Markdown and case-history summary verification: `ok`, official case number included, lookup-password stored status reported, and lookup password value omitted.
 - Case correction tracking verification: `ok`, correction status, due time, and item count recorded in summaries and UI.
 - Metadata embedding statuses on this machine: `sidecar_only`, `sidecar_only`
 - Latest Taipei official preflight: `ok`, 6 present selectors, 3 deferred selectors, 0 missing selectors.

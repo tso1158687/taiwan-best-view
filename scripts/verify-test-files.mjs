@@ -350,6 +350,7 @@ async function main() {
   await writeFile(join(report.caseDirectory, "case-record-summary.md"), caseRecordMarkdown);
   const completeWorkflowChecklist = await createCaseWorkflowChecklist({ caseDirectory: report.caseDirectory });
   assert(caseSummary.officialCaseNumber === "TP-FIXTURE-0001", "Expected case summary to include official case number.");
+  assert(caseSummary.lookupPasswordStored === true, "Expected case summary to report lookup password presence without exposing the value.");
   assert(caseSummary.submissionStatus === "submitted_by_user", "Expected case summary to include updated submission status.");
   assert(caseSummary.correctionStatus === "needs_action", "Expected case summary to include correction status.");
   assert(caseSummary.correctionDueAt === "2026-06-20T23:59:59+08:00", "Expected case summary to include correction due time.");
@@ -423,6 +424,7 @@ async function main() {
     caseRecordStatus: caseRecord.submissionStatus,
     updatedCaseRecordStatus: submittedRecord.submissionStatus,
     caseSummaryOfficialCaseNumber: caseSummary.officialCaseNumber,
+    caseSummaryLookupPasswordStored: caseSummary.lookupPasswordStored,
     caseCorrectionStatus: caseSummary.correctionStatus,
     caseCorrectionItemCount: caseSummary.correctionItemCount,
     caseRecordMarkdownVerification: "ok",

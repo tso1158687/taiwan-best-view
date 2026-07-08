@@ -101,6 +101,7 @@ async function main() {
         submissionStatus: "submitted_by_user",
         automationStatus: "blocked_by_missing_data",
         officialCaseNumber: "TP-FIXTURE-0001",
+        lookupPasswordStored: true,
         submittedAt: "2026-06-16T12:00:00+08:00",
         correctionStatus: "needs_action",
         correctionDueAt: "2026-06-20T23:59:59+08:00",
@@ -117,6 +118,7 @@ async function main() {
         submissionStatus: "needs_missing_data",
         automationStatus: "blocked_by_missing_data",
         officialCaseNumber: "",
+        lookupPasswordStored: false,
         submittedAt: "",
         correctionStatus: "",
         attachmentCount: 1,
@@ -341,6 +343,8 @@ async function main() {
     await importJson(page, recordPath);
     const recordText = await visibleText(page, "#caseRecordPanel");
     assert(recordText.includes("TP-FIXTURE-0001"), "Expected single case record official case number to render.");
+    assert(recordText.includes("查詢密碼") && recordText.includes("已保存"), "Expected lookup password stored status to render without the value.");
+    assert(!recordText.includes("fixture-only"), "Case record UI must not expose lookup password value.");
     assert(recordText.includes("使用者已手動送件"), "Expected submitted status label to render.");
     assert(recordText.includes("2026/6/20"), "Expected correction due date to render.");
     assert(recordText.includes("2 項"), "Expected correction item count to render.");
@@ -349,6 +353,7 @@ async function main() {
     const historyText = await visibleText(page, "#caseRecordPanel");
     assert(historyText.includes("2 筆案件"), "Expected case history count to render.");
     assert(historyText.includes("case-ui-draft"), "Expected second history item to render.");
+    assert(historyText.includes("未保存"), "Expected case history to render missing lookup password status.");
 
     await importReadinessJson(page, readinessPath);
     const readinessText = await visibleText(page, "#readinessPanel");

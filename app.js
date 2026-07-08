@@ -519,6 +519,7 @@ function appendCaseRecordCard(record, titleText) {
   const correction = record.official?.correction || {};
   const correctionStatus = correction.status || record.official?.correctionStatus || record.correctionStatus || "";
   const correctionItems = Array.isArray(correction.items) ? correction.items : [];
+  const lookupPasswordStored = Boolean(record.official?.lookupPassword || record.lookupPasswordStored);
 
   card.className = "case-record-card";
   title.className = "case-record-title";
@@ -531,6 +532,7 @@ function appendCaseRecordCard(record, titleText) {
     createDetail("送件狀態", formatRecordStatus(record.submissionStatus)),
     createDetail("自動化狀態", formatRecordStatus(record.automationStatus)),
     createDetail("官方案號", record.official?.caseNumber || record.officialCaseNumber || ""),
+    createDetail("查詢密碼", lookupPasswordStored ? "已保存" : "未保存"),
     createDetail("送件時間", formatDateTime(record.official?.submittedAt || record.submittedAt)),
     createDetail("補正狀態", formatRecordStatus(correctionStatus)),
     createDetail("補正期限", formatDateTime(correction.dueAt || record.correctionDueAt)),

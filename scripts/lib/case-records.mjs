@@ -108,6 +108,7 @@ export function summarizeCaseRecord(record, caseDirectory = "") {
     submissionStatus: record.submissionStatus || "",
     automationStatus: record.automationStatus || "",
     officialCaseNumber: record.official?.caseNumber || "",
+    lookupPasswordStored: Boolean(record.official?.lookupPassword),
     submittedAt: record.official?.submittedAt || "",
     correctionStatus: correction.status,
     correctionDueAt: correction.dueAt,

@@ -21,7 +21,7 @@ Taiwan Best View is a local-first helper for preparing Taiwan traffic violation 
 - Validates official-site selector manifests and guarded automation stop points.
 - Runs Playwright fixture fills locally without contacting official websites.
 - Records local case status, official case number, lookup password, and correction status after manual submission.
-- Imports case-readiness reports, workflow checklists, local case records, and case-history JSON into the browser UI for review.
+- Imports case-readiness reports, workflow checklists, local case records, and case-history JSON into the browser UI for review, including whether a lookup password is stored without showing the value.
 - Validates local reporter profiles without printing personal data values, with optional encrypted-at-rest storage.
 
 ## Safety Boundaries
@@ -155,7 +155,7 @@ npm run list:cases
 
 `export:case-record` writes `case-record-summary.md` next to the JSON record. The summary is intended for human review and archive notes; it reports whether a lookup password is stored in the JSON, but does not print the password value.
 
-To review case history in the browser UI, write a JSON summary and import it with the `匯入 JSON` button:
+To review case history in the browser UI, write a JSON summary and import it with the `匯入 JSON` button. The history summary reports whether a lookup password is stored, but does not include the password value:
 
 ```sh
 npm run list:cases -- cases --json cases/case-history.json
