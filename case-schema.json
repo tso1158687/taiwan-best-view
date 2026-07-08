@@ -425,6 +425,9 @@
       "type": "string",
       "enum": ["draft", "ready_for_review", "submitted"]
     },
+    "createdAt": {
+      "type": "string"
+    },
     "updatedAt": {
       "type": "string"
     }

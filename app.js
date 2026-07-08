@@ -73,6 +73,7 @@ let importedLocationReview = null;
 let importedCaseRecordView = null;
 let importedReadinessView = null;
 let importedWorkflowView = null;
+let draftCreatedAt = new Date().toISOString();
 
 function toTaiwanIsoString(datetimeLocalValue) {
   if (!datetimeLocalValue) return "";
@@ -151,6 +152,7 @@ function createCaseDraft() {
     fieldSuggestions: selectedFiles.length > 0 ? null : importedFieldSuggestions,
     fieldReview: selectedFiles.length > 0 ? {} : importedFieldReview,
     status: data.get("status"),
+    createdAt: draftCreatedAt,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -927,6 +929,7 @@ function applyDraftToForm(draft) {
   importedPhotoAnalysis = draft.photoAnalysis || null;
   importedFieldSuggestions = draft.fieldSuggestions || null;
   importedFieldReview = draft.fieldReview || {};
+  draftCreatedAt = draft.createdAt || new Date().toISOString();
   importedCaseRecordView = null;
   importedReadinessView = null;
   importedWorkflowView = null;
@@ -1037,6 +1040,7 @@ function resetDraft() {
   importedCaseRecordView = null;
   importedReadinessView = null;
   importedWorkflowView = null;
+  draftCreatedAt = new Date().toISOString();
   fileInput.value = "";
   localStorage.removeItem(STORAGE_KEY);
   renderFiles();
@@ -1055,6 +1059,7 @@ fileInput.addEventListener("change", () => {
   importedCaseRecordView = null;
   importedReadinessView = null;
   importedWorkflowView = null;
+  draftCreatedAt = new Date().toISOString();
   renderFiles();
   handleInputChange();
 });

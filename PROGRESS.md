@@ -16,6 +16,7 @@ The project is published as a public GitHub repository:
 ## What Is Implemented
 
 - Local static Web UI for creating and editing traffic-violation case drafts.
+- Stable draft `createdAt` tracking in both CLI-generated and browser-created drafts.
 - Draft validation for core fields, attachment metadata, and saved human-review state.
 - Taipei and New Taipei jurisdiction selection for illegal-parking MVP cases.
 - Attachment validation for official-site-compatible formats.
@@ -61,7 +62,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T172343`
+- `cases/case-20260708T172749`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -76,6 +77,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - New Taipei local fixture fill: `ok`, 19 fields filled, 2 attachments uploaded, no final submit.
 - UI fixture verification: `ok`
 - Case draft validation verification: `ok`, generated drafts pass and invalid fixture drafts fail with specific issues.
+- Draft created-at verification: `ok`, CLI and UI drafts preserve `createdAt` separately from `updatedAt`.
 - Review-state validation verification: `ok`, invalid `locationReview` and `fieldReview` fixtures fail with specific issues.
 - Case workflow checklist verification: `ok`, artifact status, recommended next action, and next-command hints generated from local case folders.
 - Case workflow recommended next action verification: `workflow_complete` after packet, readiness, automation plan, case record, and summary exist.

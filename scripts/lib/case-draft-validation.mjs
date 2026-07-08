@@ -190,7 +190,7 @@ export function validateCaseDraft(draft) {
   if (hasOwn(draft, "status") && !VALID_STATUSES.has(draft.status)) {
     issues.push("draft.status.invalid");
   }
-  for (const field of ["plate", "occurredAt", "district", "road", "fact", "description"]) {
+  for (const field of ["plate", "occurredAt", "district", "road", "fact", "description", "createdAt", "updatedAt"]) {
     if (hasOwn(draft, field) && !stringValue(draft[field])) {
       issues.push(`draft.${field}.invalid_type`);
     }

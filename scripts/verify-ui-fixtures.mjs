@@ -372,6 +372,7 @@ async function main() {
     await importDraftJson(page, draftPath, "25.022475");
     await page.getByRole("button", { name: "採用候選" }).click();
     const draft = await page.evaluate(() => window.taiwanBestView.currentDraft());
+    assert(typeof draft.createdAt === "string" && draft.createdAt.length > 0, "Expected UI draft to include createdAt.");
     assert(draft.district === "新莊區", "Expected selected location candidate to fill district.");
     assert(draft.road === "中正路", "Expected selected location candidate to fill road.");
     assert(draft.addressNote.includes("GPS 反查 新北市新莊區中正路"), "Expected selected location candidate to fill address note.");
@@ -379,6 +380,7 @@ async function main() {
     assert(draft.locationReview?.candidateLabel === "25.022475, 121.426317", "Expected selected location candidate label to be recorded.");
     await page.getByRole("button", { name: /3999-YG/ }).evaluate((button) => button.click());
     const fieldReviewDraft = await page.evaluate(() => window.taiwanBestView.currentDraft());
+    assert(fieldReviewDraft.createdAt === draft.createdAt, "Expected field suggestion adoption to preserve draft createdAt.");
     assert(fieldReviewDraft.plate === "3999-YG", "Expected selected plate suggestion to fill plate.");
     assert(fieldReviewDraft.fieldReview?.plate?.status === "confirmed_by_user", "Expected selected plate suggestion to create fieldReview.");
     assert(fieldReviewDraft.fieldReview?.plate?.source === "ocr_plate", "Expected fieldReview to preserve suggestion source.");

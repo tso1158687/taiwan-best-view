@@ -75,6 +75,7 @@ async function main() {
   const invalidDraftValidation = validateCaseDraft({
     ...draft,
     jurisdiction: "kaohsiung",
+    createdAt: 123,
     locationReview: {
       status: "auto_confirmed",
       latitude: "25.0",
@@ -98,8 +99,10 @@ async function main() {
     ],
   });
   assert(draftValidation.status === "ok", "Expected generated draft to pass case-draft validation.");
+  assert(typeof draft.createdAt === "string" && draft.createdAt.length > 0, "Expected generated draft to include createdAt.");
   assert(invalidDraftValidation.status === "invalid", "Expected invalid draft fixture to fail validation.");
   assert(invalidDraftValidation.issues.includes("draft.jurisdiction.invalid"), "Expected invalid jurisdiction issue.");
+  assert(invalidDraftValidation.issues.includes("draft.createdAt.invalid_type"), "Expected invalid createdAt issue.");
   assert(invalidDraftValidation.issues.includes("attachments.0.conversionStatus.invalid"), "Expected invalid attachment conversion status issue.");
   assert(invalidDraftValidation.issues.includes("locationReview.status.invalid"), "Expected invalid location review status issue.");
   assert(invalidDraftValidation.issues.includes("locationReview.latitude.invalid_type"), "Expected invalid location review latitude issue.");
@@ -385,6 +388,7 @@ async function main() {
     submissionPacketStatus: packet.status,
     submissionPacketMissing: packet.missing,
     caseDraftValidationStatus: draftValidation.status,
+    draftCreatedAtPresent: Boolean(draft.createdAt),
     invalidDraftReviewIssueCount: invalidDraftValidation.issues.filter((issue) => issue.includes("Review")).length,
     caseReadinessStatus: readinessReport.status,
     caseReadinessCanOpenOfficialSite: readinessReport.canOpenOfficialSiteForHumanReview,
