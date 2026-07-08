@@ -58,7 +58,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T163747`
+- `cases/case-20260708T164157`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -84,6 +84,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - Guarded prototype gate with complete local data and ready readiness report: `ready_for_guarded_browser`.
 - Guarded New Taipei prototype rejects a Taipei readiness report with jurisdiction and official URL mismatch issues.
 - Case readiness Markdown checklist verification: `ok`, reporter-profile values omitted.
+- Case record Markdown summary verification: `ok`, official case number included and lookup password value omitted.
 - Metadata embedding statuses on this machine: `sidecar_only`, `sidecar_only`
 - Latest Taipei official preflight: `ok`, 6 present selectors, 3 deferred selectors, 0 missing selectors.
 - Latest New Taipei official preflight: `ok`, 20 present selectors, 0 missing selectors.

@@ -10,6 +10,7 @@ import { createPrototypeRun } from "./lib/form-prototype.mjs";
 import { createNewTaipeiAutomationPlan } from "./lib/new-taipei-automation-plan.mjs";
 import { createCaseRecord } from "./lib/case-records.mjs";
 import { updateCaseRecord, summarizeCaseRecord } from "./lib/case-records.mjs";
+import { formatCaseRecordMarkdown } from "./lib/case-record-markdown.mjs";
 import { validateSelectorManifest } from "./lib/official-selector-manifests.mjs";
 import { createReviewedPacketForFixture, runFixtureFill } from "./lib/browser-fixture-runner.mjs";
 import { summarizeReporterProfile, validateReporterProfile } from "./lib/reporter-profile.mjs";
@@ -267,8 +268,13 @@ async function main() {
     },
   });
   const caseSummary = summarizeCaseRecord(submittedRecord, report.caseDirectory);
+  const caseRecordMarkdown = formatCaseRecordMarkdown(submittedRecord);
   assert(caseSummary.officialCaseNumber === "TP-FIXTURE-0001", "Expected case summary to include official case number.");
   assert(caseSummary.submissionStatus === "submitted_by_user", "Expected case summary to include updated submission status.");
+  assert(caseRecordMarkdown.includes("# Case Record Summary"), "Expected case record Markdown title.");
+  assert(caseRecordMarkdown.includes("TP-FIXTURE-0001"), "Expected case record Markdown to include official case number.");
+  assert(caseRecordMarkdown.includes("Lookup password stored in JSON: yes"), "Expected case record Markdown to report lookup password presence.");
+  assert(!caseRecordMarkdown.includes("fixture-only"), "Case record Markdown must not expose lookup password value.");
   const uiVerification = await run("npm", ["run", "verify:ui"]);
   assert(uiVerification.stdout.includes("\"ok\": true"), "Expected UI fixture verification to pass.");
 
@@ -320,6 +326,7 @@ async function main() {
     caseRecordStatus: caseRecord.submissionStatus,
     updatedCaseRecordStatus: submittedRecord.submissionStatus,
     caseSummaryOfficialCaseNumber: caseSummary.officialCaseNumber,
+    caseRecordMarkdownVerification: "ok",
     uiFixtureVerification: "ok",
   }, null, 2));
 }
