@@ -33,6 +33,7 @@ The project is published as a public GitHub repository:
 - Field suggestions for plate, district, road, and address note.
 - Browser UI field suggestion adoption recorded as `fieldReview` for later readiness review.
 - Submission packet generation for Taipei and New Taipei.
+- Privacy-preserving pre-submit review summaries in submission packets and guarded automation plans.
 - Real-case readiness reports that gate official-site opening on complete local case and reporter data.
 - Readiness reports flag missing, future, or locally stale violation times for manual timeliness review.
 - Official preflight freshness gate in readiness reports and checklists.
@@ -63,7 +64,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T175047`
+- `cases/case-20260708T175624`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -97,6 +98,9 @@ Important observed results from the real `test-files/` HEIC photos:
 - Reporter-profile fixture status: `ready`
 - Encrypted reporter-profile fixture verification: `ok`, encrypted envelope does not contain fixture identity number or email plaintext.
 - Reviewed packet status with complete fixture-only case and reporter fields: `ready_for_human_review`
+- Pre-submit review summary verification: `manual_required`, 2 attachments, reporter identity number and email omitted.
+- Taipei guarded dry-run manual stops: 4, including `review_pre_submit_summary`.
+- New Taipei guarded dry-run manual stops: 5, including `review_pre_submit_summary`.
 - Case readiness gate with incomplete real-case fields: `needs_missing_data`, official-site opening blocked.
 - Case readiness gate with complete fixture-only case, reporter fields, and fresh official preflight: `ready_for_human_review`, official-site opening allowed for human review only.
 - Occurred-at freshness verification: `older_than_review_window`, timestamp risk is shown as a review warning.

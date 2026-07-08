@@ -189,6 +189,8 @@ async function main() {
   assert(packet.missing.includes("case.plate"), "Expected plate to remain missing until human confirmation.");
   assert(packet.missing.includes("reporter.name"), "Expected reporter data to remain missing.");
   assert(packet.official.stopBefore.includes("final_submit"), "Expected final submit stop boundary.");
+  assert(packet.preSubmitReview.status === "manual_required", "Expected pre-submit review summary to require human review.");
+  assert(packet.preSubmitReview.attachments.count === 2, "Expected pre-submit review summary to include attachment count.");
   assert(readinessReport.status === "needs_missing_data", "Expected readiness gate to report missing real-case data.");
   assert(readinessReport.canOpenOfficialSiteForHumanReview === false, "Expected readiness gate to block official-site opening until data is complete.");
   assert(readinessReport.stopBefore.includes("final_submit"), "Expected readiness gate to preserve final submit boundary.");
@@ -243,6 +245,10 @@ async function main() {
   assert(readyPacket.status === "ready_for_human_review", "Expected complete reporter profile and reviewed case fields to produce a review-ready packet.");
   assert(readyPacket.missing.length === 0, "Expected no missing fields for review-ready packet.");
   assert(readyPacket.reporterProfile.provided === true, "Expected reporter profile to be marked as provided.");
+  assert(readyPacket.preSubmitReview.reporterProfile.status === "ready", "Expected pre-submit review reporter summary to be ready.");
+  assert(readyPacket.preSubmitReview.officialStopBefore.includes("final_submit"), "Expected pre-submit review to preserve final-submit stop.");
+  assert(!JSON.stringify(readyPacket.preSubmitReview).includes("A123456789"), "Pre-submit review summary must not expose identity number.");
+  assert(!JSON.stringify(readyPacket.preSubmitReview).includes("fixture@example.com"), "Pre-submit review summary must not expose email value.");
   assert(noPreflightReadinessReport.status === "needs_official_preflight", "Expected complete local data to require official preflight before official-site opening.");
   assert(noPreflightReadinessReport.canOpenOfficialSiteForHumanReview === false, "Expected missing official preflight to block official-site opening.");
   assert(readyReadinessReport.status === "ready_for_human_review", "Expected readiness gate to allow human-reviewed official-site opening after local data and official preflight are complete.");
@@ -267,6 +273,9 @@ async function main() {
     readinessReport: readyReadinessReport,
   });
   assert(readyTaipeiPlan.status === "ready_until_email_verification", "Expected reviewed Taipei plan to be ready up to Email verification.");
+  assert(readyTaipeiPlan.steps.some((item) => item.id === "review_pre_submit_summary" && item.requiresHuman), "Expected Taipei pre-submit review stop.");
+  assert(!JSON.stringify(readyTaipeiPlan.steps.find((item) => item.id === "review_pre_submit_summary")).includes("A123456789"), "Taipei pre-submit review stop must not expose identity number.");
+  assert(!JSON.stringify(readyTaipeiPlan.steps.find((item) => item.id === "review_pre_submit_summary")).includes("fixture@example.com"), "Taipei pre-submit review stop must not expose email value.");
   assert(taipeiPrototypeWithoutReadiness.status === "blocked_by_readiness_report", "Expected live Taipei prototype to require a readiness report.");
   assert(taipeiPrototypeWithStaleReadiness.status === "blocked_by_readiness_report", "Expected live Taipei prototype to reject missing official preflight readiness.");
   assert(taipeiPrototypeWithReadiness.status === "ready_for_guarded_browser", "Expected live Taipei prototype to pass with fresh readiness report.");
@@ -280,6 +289,7 @@ async function main() {
   assert(taipeiPlan.safety.dryRunOnly === true, "Expected Taipei plan to be dry-run only.");
   assert(taipeiPlan.safety.finalSubmit === false, "Expected Taipei plan to disable final submit.");
   assert(taipeiPlan.steps.some((item) => item.id === "stop_before_email_verification" && item.requiresHuman), "Expected email verification stop.");
+  assert(taipeiPlan.steps.some((item) => item.id === "review_pre_submit_summary" && item.requiresHuman), "Expected Taipei pre-submit review stop in missing-data plan.");
   const taipeiPrototype = await createPrototypeRun({ plan: taipeiPlan, allowNetwork: false });
   assert(taipeiPrototype.status === "blocked_by_missing_data", "Expected Taipei prototype to refuse missing data.");
   assert(taipeiPrototype.externalSideEffects === false, "Expected Taipei prototype to avoid external side effects.");
@@ -304,6 +314,7 @@ async function main() {
   assert(newTaipeiPlan.status === "blocked_by_missing_data", "Expected New Taipei dry run to be blocked by missing data.");
   assert(newTaipeiPlan.steps.some((item) => item.id === "stop_before_disclaimer" && item.requiresHuman), "Expected New Taipei disclaimer stop.");
   assert(newTaipeiPlan.steps.some((item) => item.id === "stop_before_captcha" && item.requiresHuman), "Expected New Taipei CAPTCHA stop.");
+  assert(newTaipeiPlan.steps.some((item) => item.id === "review_pre_submit_summary" && item.requiresHuman), "Expected New Taipei pre-submit review stop.");
   assert(newTaipeiSelectors.status === "ok", "Expected New Taipei selector manifest to validate.");
   assert(newTaipeiSelectors.finalSubmitBlocked === true, "Expected New Taipei selector manifest to block final submit.");
   assert(newTaipeiPrototype.status === "blocked_by_missing_data", "Expected New Taipei prototype to refuse missing data.");
@@ -338,6 +349,7 @@ async function main() {
   assert(readyNewTaipeiPacket.status === "ready_for_human_review", "Expected reviewed New Taipei packet to be ready.");
   assert(readyNewTaipeiReadinessReport.status === "ready_for_human_review", "Expected reviewed New Taipei readiness report to be ready.");
   assert(readyNewTaipeiPlan.status === "ready_until_captcha_email_verification", "Expected reviewed New Taipei plan to be ready up to CAPTCHA/Email verification.");
+  assert(readyNewTaipeiPlan.steps.some((item) => item.id === "review_pre_submit_summary" && item.requiresHuman), "Expected reviewed New Taipei pre-submit review stop.");
   assert(newTaipeiPrototypeWithoutReadiness.status === "blocked_by_readiness_report", "Expected live New Taipei prototype to require a readiness report.");
   assert(newTaipeiPrototypeWithTaipeiReadiness.status === "blocked_by_readiness_report", "Expected live New Taipei prototype to reject Taipei readiness report.");
   assert(newTaipeiPrototypeWithTaipeiReadiness.readinessGate.issues.includes("readiness_report.jurisdiction_mismatch"), "Expected cross-jurisdiction readiness report mismatch issue.");
@@ -357,6 +369,7 @@ async function main() {
   assert(caseRecord.submissionStatus === "needs_missing_data", "Expected case record to mirror submission status.");
   assert(caseRecord.automationStatus === "blocked_by_missing_data", "Expected case record to mirror automation status.");
   assert(caseRecord.official.caseNumber === "", "Expected official case number to remain manually filled.");
+  assert(caseRecord.requiredHumanStops.includes("review_pre_submit_summary"), "Expected case record to keep pre-submit review stop.");
   assert(caseRecord.requiredHumanStops.includes("stop_before_final_submit"), "Expected case record to keep final submit stop.");
   const submittedRecord = updateCaseRecord(caseRecord, {
     localStatus: "submitted",
@@ -437,6 +450,8 @@ async function main() {
     caseReadinessStatus: readinessReport.status,
     caseReadinessCanOpenOfficialSite: readinessReport.canOpenOfficialSiteForHumanReview,
     reviewedPacketStatus: readyPacket.status,
+    preSubmitReviewStatus: readyPacket.preSubmitReview.status,
+    preSubmitReviewAttachmentCount: readyPacket.preSubmitReview.attachments.count,
     noPreflightCaseReadinessStatus: noPreflightReadinessReport.status,
     reviewedCaseReadinessStatus: readyReadinessReport.status,
     reviewedCaseReadinessCanOpenOfficialSite: readyReadinessReport.canOpenOfficialSiteForHumanReview,

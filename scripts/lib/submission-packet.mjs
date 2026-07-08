@@ -68,6 +68,61 @@ async function attachmentSummary(attachments) {
   return summaries;
 }
 
+function totalAttachmentBytes(attachments) {
+  return attachments.reduce((sum, attachment) => sum + (attachment.size || 0), 0);
+}
+
+function createPreSubmitReview(packet) {
+  const attachments = packet.attachments || [];
+
+  return {
+    status: "manual_required",
+    privacy: "Reporter profile values are intentionally omitted from this summary.",
+    case: {
+      jurisdiction: packet.jurisdiction,
+      violationType: packet.caseData.violationType,
+      plate: {
+        prefix: packet.caseData.plate.prefix,
+        suffix: packet.caseData.plate.suffix,
+      },
+      occurredAt: packet.caseData.occurredAt,
+      district: packet.caseData.district,
+      road: packet.caseData.road,
+      addressNote: packet.caseData.addressNote,
+      fact: packet.caseData.fact,
+      description: packet.caseData.description,
+      locationReviewStatus: packet.caseData.locationReview?.status || packet.caseData.locationAssistance?.status || "",
+      confirmedFieldNames: Object.keys(packet.caseData.fieldReview || {}),
+    },
+    attachments: {
+      count: attachments.length,
+      totalBytes: totalAttachmentBytes(attachments),
+      items: attachments.map((attachment) => ({
+        submissionName: attachment.submissionName,
+        extension: attachment.extension,
+        size: attachment.size,
+        acceptedByOfficial: attachment.acceptedByOfficial,
+        conversionStatus: attachment.conversionStatus,
+        exifStatus: attachment.exifStatus,
+        gpsStatus: attachment.gpsStatus,
+      })),
+    },
+    reporterProfile: {
+      provided: packet.reporterProfile.provided,
+      missingCount: packet.reporterProfile.missing.length,
+      invalidCount: packet.reporterProfile.invalid.length,
+      status: packet.reporterProfile.missing.length === 0 && packet.reporterProfile.invalid.length === 0 ? "ready" : "needs_missing_data",
+    },
+    officialStopBefore: packet.official?.stopBefore || [],
+    checklist: [
+      "確認違規時間、地點、車號、違規事實與照片證據一致。",
+      "確認附件可上傳且 EXIF/GPS 狀態已人工檢查。",
+      "確認檢舉人資料由本人填寫，且官方聲明由本人閱讀確認。",
+      "最後送出必須由使用者本人操作。",
+    ],
+  };
+}
+
 function createBasePacket({ draft, reporterProfile, attachments }) {
   const missing = [
     ...missingFields(draft, ["plate", "occurredAt", "district", "road", "fact", "description"], "case"),
@@ -110,6 +165,7 @@ function createBasePacket({ draft, reporterProfile, attachments }) {
       description: draft.description,
       fieldSuggestions: draft.fieldSuggestions || null,
       fieldReview: draft.fieldReview || {},
+      locationReview: draft.locationReview || {},
       locationAssistance: draft.locationAssistance || null,
       photoAnalysis: draft.photoAnalysis
         ? {
@@ -217,6 +273,7 @@ export async function createSubmissionPacket({ draft, reporterProfile = null }) 
 
   packet.missing = [...packet.missing, ...packet.reporterProfile.missing, ...packet.reporterProfile.invalid];
   packet.status = packet.missing.length === 0 ? "ready_for_human_review" : "needs_missing_data";
+  packet.preSubmitReview = createPreSubmitReview(packet);
 
   return packet;
 }

@@ -89,6 +89,12 @@ export function createTaipeiAutomationPlan(packet) {
       requiresHuman: true,
       stopReason: "個資蒐集、隱私權政策、資料真實聲明必須由使用者本人確認。",
     }),
+    step("review_pre_submit_summary", "送出前人工檢查摘要", "review_pre_submit_summary", {
+      status: "manual_required",
+      requiresHuman: true,
+      data: packet.preSubmitReview || null,
+      stopReason: "送出前請使用者本人逐項確認案件摘要、附件與官方停止點。",
+    }),
     step("stop_before_final_submit", "最後送出前暫停", "stop", {
       status: "manual_required",
       requiresHuman: true,
