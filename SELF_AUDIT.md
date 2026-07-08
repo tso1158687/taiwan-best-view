@@ -130,6 +130,7 @@ Evidence:
 - Plate candidates include normalized text, plate pattern, confidence reasons, and require-review metadata
 - Plate and address note field suggestions are written to `fieldSuggestions`
 - Browser UI can adopt a field suggestion into the form and records the confirmation as `fieldReview`
+- Browser UI renders OCR confidence percentages and confidence reasons in the photo-analysis and field-suggestion panels
 
 Remaining:
 
