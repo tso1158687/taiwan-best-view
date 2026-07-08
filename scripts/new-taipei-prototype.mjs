@@ -1,16 +1,36 @@
 #!/usr/bin/env node
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { createPrototypeRun, loadAutomationPlan } from "./lib/form-prototype.mjs";
 
 function usage() {
-  console.log("Usage: node scripts/new-taipei-prototype.mjs <new-taipei-automation-plan.json> [--allow-network]");
+  console.log("Usage: node scripts/new-taipei-prototype.mjs <new-taipei-automation-plan.json> [--readiness-report case-readiness-report.json] [--allow-network]");
   console.log("");
-  console.log("Runs a guarded New Taipei prototype preflight. It never submits, bypasses CAPTCHA/Email, or launches a browser unless --allow-network is provided.");
+  console.log("Runs a guarded New Taipei prototype preflight. It never submits, bypasses CAPTCHA/Email, or launches a browser unless --allow-network and a ready readiness report are provided.");
+}
+
+function parseArgs(argv) {
+  const result = {
+    planArg: argv[2],
+    allowNetwork: false,
+    readinessReportPath: "",
+  };
+
+  for (let index = 3; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === "--allow-network") {
+      result.allowNetwork = true;
+    } else if (arg === "--readiness-report") {
+      result.readinessReportPath = argv[index + 1] || "";
+      index += 1;
+    }
+  }
+
+  return result;
 }
 
 async function main() {
-  const [, , planArg, ...rest] = process.argv;
+  const { planArg, allowNetwork, readinessReportPath } = parseArgs(process.argv);
   if (!planArg || planArg === "--help" || planArg === "-h") {
     usage();
     return;
@@ -21,10 +41,14 @@ async function main() {
   if (plan.jurisdiction !== "new_taipei") {
     throw new Error(`New Taipei prototype cannot handle jurisdiction: ${plan.jurisdiction}`);
   }
+  const readinessReport = readinessReportPath
+    ? JSON.parse(await readFile(resolve(readinessReportPath), "utf8"))
+    : null;
 
   const result = await createPrototypeRun({
     plan,
-    allowNetwork: rest.includes("--allow-network"),
+    allowNetwork,
+    readinessReport,
   });
   const outputPath = join(dirname(planPath), "new-taipei-prototype-run.json");
   await writeFile(outputPath, `${JSON.stringify(result, null, 2)}\n`);

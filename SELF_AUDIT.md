@@ -168,7 +168,7 @@ Evidence:
 - `scripts/validate-reporter-profile.mjs` validates reporter profile completeness without printing personal data values
 - `createSubmissionPacket` accepts a reporter profile, validates invalid email / identity type fields, and produces `ready_for_human_review` only when both case and reporter fields are complete
 - `scripts/taipei-dry-run.mjs` writes `taipei-automation-plan.json` without opening or submitting to the official site
-- `scripts/taipei-prototype.mjs` writes `taipei-prototype-run.json` and refuses to contact the official site unless required data is complete and `--allow-network` is explicitly provided
+- `scripts/taipei-prototype.mjs` writes `taipei-prototype-run.json` and refuses to contact the official site unless required data is complete, a ready `case-readiness-report.json` is provided, and `--allow-network` is explicitly provided
 - `scripts/lib/official-selector-manifests.mjs` records Taipei route, API, field, attachment, and human-stop selectors from the official Vue bundle observed on 2026-06-16
 - `scripts/inspect-official-selectors.mjs taipei` validates 17 Taipei field locators and 3 human stop boundaries
 - `scripts/live-official-preflight.mjs taipei --allow-network` performs a read-only official-site preflight that does not fill data, upload files, click verification controls, or submit forms
@@ -181,6 +181,7 @@ Evidence:
 - Verification confirmed `caseReadinessCanOpenOfficialSite: false` before required data is complete and `reviewedCaseReadinessCanOpenOfficialSite: true` only for human review
 - Verification confirmed `reporterProfileSummaryStatus: "ready"` for fixture-only complete data, while `reporter-profile.example.json` remains intentionally incomplete and validates as `needs_missing_data`
 - Verification confirmed `taipeiFixtureFillStatus: "ok"`, `taipeiFixtureFilledFields: 15`, `taipeiFixtureUploadedAttachments: 2`, and no triggered human stop or final submit
+- Verification confirmed `taipeiPrototypeWithoutReadinessStatus: "blocked_by_readiness_report"` and `taipeiPrototypeWithReadinessStatus: "ready_for_guarded_browser"`
 - Latest live official preflight wrote `cases/taipei-live-preflight.json` with `status: "ok"`, 6 present selectors, 3 deferred selectors, and 0 missing selectors
 - Latest written Taipei evidence: `cases/case-20260616T031513/taipei-fixture-fill-report.json`, `taipei-automation-plan.json`, and `case-record.json`
 
@@ -200,7 +201,7 @@ Evidence:
 - `scripts/lib/new-taipei-automation-plan.mjs` creates a guarded New Taipei automation plan from `submission-packet.json`
 - `scripts/review-case-readiness.mjs` uses the same submission-packet rules for New Taipei readiness before a human-reviewed official-site session
 - `scripts/new-taipei-dry-run.mjs` writes `new-taipei-automation-plan.json` without opening or submitting to the official site
-- `scripts/new-taipei-prototype.mjs` writes `new-taipei-prototype-run.json` and refuses to contact the official site unless required data is complete and `--allow-network` is explicitly provided
+- `scripts/new-taipei-prototype.mjs` writes `new-taipei-prototype-run.json` and refuses to contact the official site unless required data is complete, a ready `case-readiness-report.json` is provided, and `--allow-network` is explicitly provided
 - `scripts/lib/official-selector-manifests.mjs` records New Taipei route, form field, attachment, CAPTCHA, Email, and final-submit selectors from official HTML observed on 2026-06-16
 - `scripts/inspect-official-selectors.mjs new_taipei` validates 20 New Taipei field locators and 4 human stop boundaries
 - `scripts/live-official-preflight.mjs new_taipei --allow-network` performs a read-only official-site preflight that does not fill data, upload files, click verification controls, or submit forms
@@ -269,6 +270,7 @@ npm run create:case -- test-files --jurisdiction taipei
 npm run prepare:submission -- cases/case-20260616T031513/draft.json
 npm run review:case -- cases/case-20260616T031513/draft.json --official-preflight cases/taipei-live-preflight.json --markdown cases/case-20260616T031513/case-readiness-checklist.md
 npm run taipei:dry-run -- cases/case-20260616T031513/submission-packet.json
+npm run taipei:prototype -- cases/case-20260616T031513/taipei-automation-plan.json --readiness-report cases/case-20260616T031513/case-readiness-report.json --allow-network
 npm run fixture:fill -- cases/case-20260616T031513/submission-packet.json --jurisdiction taipei
 npm run fixture:fill -- cases/case-20260616T031513/submission-packet.json --jurisdiction new_taipei
 npm run update:case-record -- cases/case-20260616T160849/case-record.json --case-number TP-FIXTURE-0001 --lookup-password fixture-only --submitted-at 2026-06-16T12:00:00+08:00 --submission-status submitted_by_user --local-status submitted --correction-status none
@@ -276,11 +278,11 @@ npm run list:cases -- cases --json cases/case-history.json
 npm run create:case -- test-files --jurisdiction new_taipei
 npm run prepare:submission -- cases/case-20260616T030331/draft.json
 npm run new-taipei:dry-run -- cases/case-20260616T030331/submission-packet.json
-npm run new-taipei:prototype -- cases/case-20260616T030331/new-taipei-automation-plan.json
+npm run new-taipei:prototype -- cases/case-20260616T030331/new-taipei-automation-plan.json --readiness-report cases/case-20260616T030331/case-readiness-report.json --allow-network
 npm run write:case-record -- cases/case-20260616T031513/draft.json cases/case-20260616T031513/submission-packet.json cases/case-20260616T031513/taipei-automation-plan.json
 npm run write:case-record -- cases/case-20260616T030331/draft.json cases/case-20260616T030331/submission-packet.json cases/case-20260616T030331/new-taipei-automation-plan.json
 node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
 find cases/case-20260616T024545/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
-All listed commands completed successfully by the 2026-07-09 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260708T162812`; the latest plate verification returned normalized candidates `3999-YG` and `3999-B` with patterns `four_digits_two_letters` and `four_digits_one_letter_incomplete`; the latest readiness verification returned `caseReadinessStatus: "needs_missing_data"`, `noPreflightCaseReadinessStatus: "needs_official_preflight"`, `reviewedCaseReadinessStatus: "ready_for_human_review"`, `reviewedCaseReadinessOfficialPreflightStatus: "ok"`, and `reviewedCaseReadinessCanOpenOfficialSite: true`; the latest readiness Markdown verification included `final_submit` and command hints while omitting fixture identity number and email values; the latest confirmed-location verification returned one matched frequent-location candidate by GPS distance and OCR text, and UI verification covers confirmed-location candidate confirmation; the latest reporter-profile fixture verification returned `reviewedPacketStatus: "ready_for_human_review"` and `reporterProfileSummaryStatus: "ready"`; the latest metadata verification returned `metadataEmbeddingStatuses: ["sidecar_only", "sidecar_only"]`; the latest UI fixture verification returned `uiFixtureVerification: "ok"` and covers case-readiness import, location candidate confirmation, and confirmed-location candidate confirmation; the latest live official preflight reports were written to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json` with `status: "ok"`.
+All listed commands completed successfully by the 2026-07-09 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260708T163452`; the latest plate verification returned normalized candidates `3999-YG` and `3999-B` with patterns `four_digits_two_letters` and `four_digits_one_letter_incomplete`; the latest readiness verification returned `caseReadinessStatus: "needs_missing_data"`, `noPreflightCaseReadinessStatus: "needs_official_preflight"`, `reviewedCaseReadinessStatus: "ready_for_human_review"`, `reviewedCaseReadinessOfficialPreflightStatus: "ok"`, and `reviewedCaseReadinessCanOpenOfficialSite: true`; the latest prototype readiness gate verification returned `taipeiPrototypeWithoutReadinessStatus: "blocked_by_readiness_report"` and `taipeiPrototypeWithReadinessStatus: "ready_for_guarded_browser"`; the latest readiness Markdown verification included `final_submit` and command hints while omitting fixture identity number and email values; the latest confirmed-location verification returned one matched frequent-location candidate by GPS distance and OCR text, and UI verification covers confirmed-location candidate confirmation; the latest reporter-profile fixture verification returned `reviewedPacketStatus: "ready_for_human_review"` and `reporterProfileSummaryStatus: "ready"`; the latest metadata verification returned `metadataEmbeddingStatuses: ["sidecar_only", "sidecar_only"]`; the latest UI fixture verification returned `uiFixtureVerification: "ok"` and covers case-readiness import, location candidate confirmation, and confirmed-location candidate confirmation; the latest live official preflight reports were written to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json` with `status: "ok"`.

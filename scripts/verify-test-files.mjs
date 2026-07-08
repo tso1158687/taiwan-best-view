@@ -144,6 +144,26 @@ async function main() {
   assert(readyReadinessReport.canOpenOfficialSiteForHumanReview === true, "Expected readiness gate to allow official-site opening only for human review.");
   assert(readyReadinessReport.finalSubmitAutomated === false, "Expected readiness gate to keep final submit manual.");
   assert(readyReadinessReport.officialPreflight.status === "ok", "Expected readiness gate to include fresh official preflight.");
+  const readyTaipeiPlan = createTaipeiAutomationPlan(readyPacket);
+  const taipeiPrototypeWithoutReadiness = await createPrototypeRun({
+    plan: readyTaipeiPlan,
+    allowNetwork: true,
+  });
+  const taipeiPrototypeWithStaleReadiness = await createPrototypeRun({
+    plan: readyTaipeiPlan,
+    allowNetwork: true,
+    readinessReport: noPreflightReadinessReport,
+  });
+  const taipeiPrototypeWithReadiness = await createPrototypeRun({
+    plan: readyTaipeiPlan,
+    allowNetwork: true,
+    readinessReport: readyReadinessReport,
+  });
+  assert(readyTaipeiPlan.status === "ready_until_email_verification", "Expected reviewed Taipei plan to be ready up to Email verification.");
+  assert(taipeiPrototypeWithoutReadiness.status === "blocked_by_readiness_report", "Expected live Taipei prototype to require a readiness report.");
+  assert(taipeiPrototypeWithStaleReadiness.status === "blocked_by_readiness_report", "Expected live Taipei prototype to reject missing official preflight readiness.");
+  assert(taipeiPrototypeWithReadiness.status === "ready_for_guarded_browser", "Expected live Taipei prototype to pass with fresh readiness report.");
+  assert(taipeiPrototypeWithReadiness.readinessGate.status === "ok", "Expected live Taipei prototype readiness gate to pass.");
   const taipeiPlan = createTaipeiAutomationPlan(packet);
   assert(taipeiPlan.status === "blocked_by_missing_data", "Expected Taipei dry run to be blocked by missing data.");
   assert(taipeiPlan.safety.dryRunOnly === true, "Expected Taipei plan to be dry-run only.");
@@ -231,6 +251,8 @@ async function main() {
     reviewedCaseReadinessStatus: readyReadinessReport.status,
     reviewedCaseReadinessCanOpenOfficialSite: readyReadinessReport.canOpenOfficialSiteForHumanReview,
     reviewedCaseReadinessOfficialPreflightStatus: readyReadinessReport.officialPreflight.status,
+    taipeiPrototypeWithoutReadinessStatus: taipeiPrototypeWithoutReadiness.status,
+    taipeiPrototypeWithReadinessStatus: taipeiPrototypeWithReadiness.status,
     reporterProfileSummaryStatus: reporterSummary.status,
     metadataEmbeddingStatuses: converted.map((attachment) => attachment.metadataEmbeddingStatus),
     taipeiDryRunStatus: taipeiPlan.status,

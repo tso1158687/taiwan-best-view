@@ -41,9 +41,41 @@ export async function loadAutomationPlan(planPath) {
   return JSON.parse(await readFile(planPath, "utf8"));
 }
 
-export async function createPrototypeRun({ plan, allowNetwork = false }) {
+function summarizeReadinessReport(readinessReport) {
+  if (!readinessReport) {
+    return {
+      status: "not_provided",
+      canOpenOfficialSiteForHumanReview: false,
+      officialPreflightStatus: "not_provided",
+      issues: ["readiness_report.missing"],
+    };
+  }
+
+  const officialPreflightStatus = readinessReport.officialPreflight?.status || "not_provided";
+  const issues = [];
+  if (readinessReport.status !== "ready_for_human_review") {
+    issues.push("readiness_report.not_ready");
+  }
+  if (readinessReport.canOpenOfficialSiteForHumanReview !== true) {
+    issues.push("readiness_report.official_site_not_allowed");
+  }
+  if (officialPreflightStatus !== "ok") {
+    issues.push("readiness_report.official_preflight_not_ok");
+  }
+
+  return {
+    status: issues.length === 0 ? "ok" : "needs_recheck",
+    reportStatus: readinessReport.status || "",
+    canOpenOfficialSiteForHumanReview: readinessReport.canOpenOfficialSiteForHumanReview === true,
+    officialPreflightStatus,
+    issues,
+  };
+}
+
+export async function createPrototypeRun({ plan, allowNetwork = false, readinessReport = null }) {
   const playwrightAvailable = packageAvailable("playwright");
   const selectorValidation = validateSelectorManifest(plan.jurisdiction);
+  const readinessGate = summarizeReadinessReport(readinessReport);
   const missingData = [
     ...(plan.missingCaseFields || []),
     ...(plan.missingReporterFields || []),
@@ -62,6 +94,7 @@ export async function createPrototypeRun({ plan, allowNetwork = false }) {
     captchaBypass: false,
     emailBypass: false,
     selectorValidation,
+    readinessGate,
     readyStepsBeforeFirstHumanStop: readyStepsBeforeHumanStop(plan),
     manualStopIds: manualStopIds(plan),
     blockedSteps: blockedSteps(plan),
@@ -78,6 +111,13 @@ export async function createPrototypeRun({ plan, allowNetwork = false }) {
     result.status = "network_not_allowed";
     result.notes.push("Prototype guard passed, but --allow-network was not provided.");
     result.notes.push("No browser was launched and no official website was contacted.");
+    return result;
+  }
+
+  if (readinessGate.status !== "ok") {
+    result.status = "blocked_by_readiness_report";
+    result.notes.push("Prototype refused to open the official site because the case-readiness report is missing or not ready.");
+    result.notes.push("Run review:case with a fresh read-only official preflight, then pass --readiness-report.");
     return result;
   }
 
