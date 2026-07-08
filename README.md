@@ -53,7 +53,10 @@ Create a local Taipei case from photos:
 ```sh
 npm run create:case -- test-files --jurisdiction taipei
 npm run create:case -- test-files --jurisdiction taipei --confirmed-locations confirmed-locations.local.json
+npm run validate:case-draft -- cases/<case-id>/draft.json
 ```
+
+`validate:case-draft` checks the local draft structure and attachment metadata fields. It does not read attachment file contents or contact official websites.
 
 Check local metadata tooling:
 

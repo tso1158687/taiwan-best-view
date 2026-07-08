@@ -11,6 +11,7 @@ import { createNewTaipeiAutomationPlan } from "./lib/new-taipei-automation-plan.
 import { createCaseRecord } from "./lib/case-records.mjs";
 import { updateCaseRecord, summarizeCaseRecord } from "./lib/case-records.mjs";
 import { formatCaseRecordMarkdown } from "./lib/case-record-markdown.mjs";
+import { validateCaseDraft } from "./lib/case-draft-validation.mjs";
 import { validateSelectorManifest } from "./lib/official-selector-manifests.mjs";
 import { createReviewedPacketForFixture, runFixtureFill } from "./lib/browser-fixture-runner.mjs";
 import { summarizeReporterProfile, validateReporterProfile } from "./lib/reporter-profile.mjs";
@@ -69,6 +70,21 @@ async function main() {
   assert(report.attachments.some((attachment) => attachment.gpsStatus === "missing"), "Expected one attachment missing GPS.");
 
   const draft = JSON.parse(await readFile(join(report.caseDirectory, "draft.json"), "utf8"));
+  const draftValidation = validateCaseDraft(draft);
+  const invalidDraftValidation = validateCaseDraft({
+    ...draft,
+    jurisdiction: "kaohsiung",
+    attachments: [
+      {
+        ...draft.attachments[0],
+        conversionStatus: "mystery",
+      },
+    ],
+  });
+  assert(draftValidation.status === "ok", "Expected generated draft to pass case-draft validation.");
+  assert(invalidDraftValidation.status === "invalid", "Expected invalid draft fixture to fail validation.");
+  assert(invalidDraftValidation.issues.includes("draft.jurisdiction.invalid"), "Expected invalid jurisdiction issue.");
+  assert(invalidDraftValidation.issues.includes("attachments.0.conversionStatus.invalid"), "Expected invalid attachment conversion status issue.");
   const readinessNow = new Date("2026-07-09T12:00:00.000Z");
   const taipeiOfficialPreflight = {
     generatedAt: "2026-07-09T08:00:00.000Z",
@@ -295,6 +311,7 @@ async function main() {
     addressNoteSuggestions: report.fieldSuggestions.addressNote.map((suggestion) => suggestion.value),
     submissionPacketStatus: packet.status,
     submissionPacketMissing: packet.missing,
+    caseDraftValidationStatus: draftValidation.status,
     caseReadinessStatus: readinessReport.status,
     caseReadinessCanOpenOfficialSite: readinessReport.canOpenOfficialSiteForHumanReview,
     reviewedPacketStatus: readyPacket.status,
