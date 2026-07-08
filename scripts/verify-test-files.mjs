@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFile, stat } from "node:fs/promises";
+import { readFile, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathExists, run } from "./lib/system.mjs";
 import { readSipsMetadata } from "./lib/metadata.mjs";
@@ -12,6 +12,7 @@ import { createCaseRecord } from "./lib/case-records.mjs";
 import { updateCaseRecord, summarizeCaseRecord } from "./lib/case-records.mjs";
 import { formatCaseRecordMarkdown } from "./lib/case-record-markdown.mjs";
 import { validateCaseDraft } from "./lib/case-draft-validation.mjs";
+import { createCaseWorkflowChecklist } from "./lib/case-workflow-checklist.mjs";
 import { validateSelectorManifest } from "./lib/official-selector-manifests.mjs";
 import { createReviewedPacketForFixture, runFixtureFill } from "./lib/browser-fixture-runner.mjs";
 import { summarizeReporterProfile, validateReporterProfile } from "./lib/reporter-profile.mjs";
@@ -85,6 +86,10 @@ async function main() {
   assert(invalidDraftValidation.status === "invalid", "Expected invalid draft fixture to fail validation.");
   assert(invalidDraftValidation.issues.includes("draft.jurisdiction.invalid"), "Expected invalid jurisdiction issue.");
   assert(invalidDraftValidation.issues.includes("attachments.0.conversionStatus.invalid"), "Expected invalid attachment conversion status issue.");
+  const draftOnlyWorkflowChecklist = await createCaseWorkflowChecklist({ caseDirectory: report.caseDirectory });
+  assert(draftOnlyWorkflowChecklist.draftValidation.status === "ok", "Expected workflow checklist to validate draft.");
+  assert(draftOnlyWorkflowChecklist.statuses.submissionPacket === "missing", "Expected workflow checklist to report missing submission packet.");
+  assert(draftOnlyWorkflowChecklist.nextCommands.some((command) => command.includes("prepare:submission")), "Expected workflow checklist to suggest submission preparation.");
   const readinessNow = new Date("2026-07-09T12:00:00.000Z");
   const taipeiOfficialPreflight = {
     generatedAt: "2026-07-09T08:00:00.000Z",
@@ -190,6 +195,10 @@ async function main() {
   assert(taipeiPrototypeWithStaleReadiness.status === "blocked_by_readiness_report", "Expected live Taipei prototype to reject missing official preflight readiness.");
   assert(taipeiPrototypeWithReadiness.status === "ready_for_guarded_browser", "Expected live Taipei prototype to pass with fresh readiness report.");
   assert(taipeiPrototypeWithReadiness.readinessGate.status === "ok", "Expected live Taipei prototype readiness gate to pass.");
+  await writeFile(join(report.caseDirectory, "submission-packet.json"), `${JSON.stringify(readyPacket, null, 2)}\n`);
+  await writeFile(join(report.caseDirectory, "taipei-automation-plan.json"), `${JSON.stringify(readyTaipeiPlan, null, 2)}\n`);
+  await writeFile(join(report.caseDirectory, "case-readiness-report.json"), `${JSON.stringify(readyReadinessReport, null, 2)}\n`);
+  await writeFile(join(report.caseDirectory, "case-readiness-checklist.md"), "# Fixture readiness checklist\n");
   const taipeiPlan = createTaipeiAutomationPlan(packet);
   assert(taipeiPlan.status === "blocked_by_missing_data", "Expected Taipei dry run to be blocked by missing data.");
   assert(taipeiPlan.safety.dryRunOnly === true, "Expected Taipei plan to be dry-run only.");
@@ -285,12 +294,20 @@ async function main() {
   });
   const caseSummary = summarizeCaseRecord(submittedRecord, report.caseDirectory);
   const caseRecordMarkdown = formatCaseRecordMarkdown(submittedRecord);
+  await writeFile(join(report.caseDirectory, "case-record.json"), `${JSON.stringify(submittedRecord, null, 2)}\n`);
+  await writeFile(join(report.caseDirectory, "case-record-summary.md"), caseRecordMarkdown);
+  const completeWorkflowChecklist = await createCaseWorkflowChecklist({ caseDirectory: report.caseDirectory });
   assert(caseSummary.officialCaseNumber === "TP-FIXTURE-0001", "Expected case summary to include official case number.");
   assert(caseSummary.submissionStatus === "submitted_by_user", "Expected case summary to include updated submission status.");
   assert(caseRecordMarkdown.includes("# Case Record Summary"), "Expected case record Markdown title.");
   assert(caseRecordMarkdown.includes("TP-FIXTURE-0001"), "Expected case record Markdown to include official case number.");
   assert(caseRecordMarkdown.includes("Lookup password stored in JSON: yes"), "Expected case record Markdown to report lookup password presence.");
   assert(!caseRecordMarkdown.includes("fixture-only"), "Case record Markdown must not expose lookup password value.");
+  assert(completeWorkflowChecklist.statuses.submissionPacket === "ready_for_human_review", "Expected workflow checklist to read ready submission packet.");
+  assert(completeWorkflowChecklist.statuses.readinessReport === "ready_for_human_review", "Expected workflow checklist to read ready readiness report.");
+  assert(completeWorkflowChecklist.statuses.caseRecord === "submitted_by_user", "Expected workflow checklist to read submitted case record.");
+  assert(completeWorkflowChecklist.artifacts.every((artifact) => artifact.status === "present"), "Expected workflow checklist fixture to have all local artifacts.");
+  assert(completeWorkflowChecklist.nextCommands.some((command) => command.includes("taipei:prototype")), "Expected workflow checklist to include guarded prototype command.");
   const uiVerification = await run("npm", ["run", "verify:ui"]);
   assert(uiVerification.stdout.includes("\"ok\": true"), "Expected UI fixture verification to pass.");
 
@@ -344,6 +361,7 @@ async function main() {
     updatedCaseRecordStatus: submittedRecord.submissionStatus,
     caseSummaryOfficialCaseNumber: caseSummary.officialCaseNumber,
     caseRecordMarkdownVerification: "ok",
+    workflowChecklistVerification: completeWorkflowChecklist.statuses.caseRecord,
     uiFixtureVerification: "ok",
   }, null, 2));
 }

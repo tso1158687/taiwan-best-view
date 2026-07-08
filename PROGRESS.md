@@ -58,7 +58,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T164552`
+- `cases/case-20260708T165030`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -73,6 +73,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - New Taipei local fixture fill: `ok`, 19 fields filled, 2 attachments uploaded, no final submit.
 - UI fixture verification: `ok`
 - Case draft validation verification: `ok`, generated drafts pass and invalid fixture drafts fail with specific issues.
+- Case workflow checklist verification: `ok`, artifact status and next-command hints generated from local case folders.
 - Case readiness report UI import verification: `ok`
 - Location candidate confirmation UI verification: `ok`
 - Confirmed frequent-location candidate verification: `ok`

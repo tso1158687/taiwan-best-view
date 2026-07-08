@@ -54,9 +54,11 @@ Create a local Taipei case from photos:
 npm run create:case -- test-files --jurisdiction taipei
 npm run create:case -- test-files --jurisdiction taipei --confirmed-locations confirmed-locations.local.json
 npm run validate:case-draft -- cases/<case-id>/draft.json
+npm run review:workflow -- cases/<case-id> --markdown cases/<case-id>/case-workflow-checklist.md
 ```
 
 `validate:case-draft` checks the local draft structure and attachment metadata fields. It does not read attachment file contents or contact official websites.
+`review:workflow` checks which local artifacts exist in a case folder and suggests the next safe commands.
 
 Check local metadata tooling:
 
