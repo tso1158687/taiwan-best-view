@@ -151,6 +151,10 @@
           "type": "string",
           "enum": ["needs_review", "manual_required"]
         },
+        "confirmedLocationCandidateCount": {
+          "type": "integer",
+          "minimum": 0
+        },
         "missingGpsAttachments": {
           "type": "array",
           "items": {
@@ -161,7 +165,7 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["source", "confidence", "label", "latitude", "longitude", "evidenceFiles", "maps", "note"],
+            "required": ["source", "confidence", "label", "evidenceFiles", "maps", "note"],
             "properties": {
               "source": {
                 "type": "string"
@@ -174,10 +178,19 @@
                 "type": "string"
               },
               "latitude": {
-                "type": "number"
+                "type": ["number", "null"]
               },
               "longitude": {
-                "type": "number"
+                "type": ["number", "null"]
+              },
+              "district": {
+                "type": "string"
+              },
+              "road": {
+                "type": "string"
+              },
+              "addressNote": {
+                "type": "string"
               },
               "evidenceFiles": {
                 "type": "array",
@@ -204,6 +217,22 @@
               },
               "note": {
                 "type": "string"
+              },
+              "confirmedLocationId": {
+                "type": "string"
+              },
+              "matchReasons": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "useCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "lastConfirmedAt": {
+                "type": "string"
               }
             }
           }
@@ -227,10 +256,10 @@
           "type": "string"
         },
         "latitude": {
-          "type": "number"
+          "type": ["number", "null"]
         },
         "longitude": {
-          "type": "number"
+          "type": ["number", "null"]
         },
         "evidenceFiles": {
           "type": "array",
@@ -258,6 +287,15 @@
         },
         "note": {
           "type": "string"
+        },
+        "confirmedLocationId": {
+          "type": "string"
+        },
+        "matchReasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },

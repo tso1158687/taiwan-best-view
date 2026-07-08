@@ -19,12 +19,13 @@ async function importJson(page, path) {
   });
 }
 
-async function importDraftJson(page, path) {
+async function importDraftJson(page, path, expectedText = "locationAssistance") {
   await page.locator("#importInput").setInputFiles(path);
-  await page.waitForFunction(() => {
+  await page.waitForFunction((text) => {
     const panel = document.querySelector("#locationPanel");
-    return panel && panel.hidden === false;
-  });
+    const preview = document.querySelector("#jsonPreview");
+    return panel && panel.hidden === false && preview?.textContent.includes(text);
+  }, expectedText);
 }
 
 async function visibleText(page, selector) {
@@ -36,6 +37,7 @@ async function main() {
   const recordPath = join(fixtureDir, "case-record.json");
   const historyPath = join(fixtureDir, "case-history.json");
   const draftPath = join(fixtureDir, "draft-with-location.json");
+  const confirmedLocationDraftPath = join(fixtureDir, "draft-with-confirmed-location.json");
   const caseRecord = {
     schemaVersion: 1,
     caseId: "case-ui-fixture",
@@ -138,10 +140,47 @@ async function main() {
     fieldSuggestions: { status: "empty", plate: [], district: [], road: [], addressNote: [] },
     status: "draft",
   };
+  const draftWithConfirmedLocation = {
+    ...draftWithLocation,
+    locationAssistance: {
+      status: "needs_review",
+      missingGpsAttachments: [],
+      confirmedLocationCandidateCount: 1,
+      candidates: [
+        {
+          source: "confirmed_location",
+          confidence: "needs_review",
+          label: "新莊區中正路傳品牛排前人行道",
+          latitude: 25.022475,
+          longitude: 121.426317,
+          district: "新莊區",
+          road: "中正路",
+          addressNote: "傳品牛排前人行道",
+          evidenceFiles: ["IMG_2631.HEIC"],
+          addressLabel: "新莊區中正路傳品牛排前人行道",
+          reverseGeocode: {
+            status: "confirmed_location",
+            subLocality: "新莊區",
+            thoroughfare: "中正路",
+          },
+          maps: {
+            apple: "https://maps.apple.com/?ll=25.022475,121.426317",
+            google: "https://www.google.com/maps/search/?api=1&query=25.022475,121.426317",
+          },
+          note: "Confirmed frequent location fixture.",
+          confirmedLocationId: "fixture-confirmed-location",
+          matchReasons: ["within 0m of confirmed location", "matches OCR text: 傳品牛排"],
+          useCount: 2,
+          lastConfirmedAt: "2026-07-09T00:00:00.000Z",
+        },
+      ],
+    },
+  };
 
   await writeFile(recordPath, `${JSON.stringify(caseRecord, null, 2)}\n`);
   await writeFile(historyPath, `${JSON.stringify(caseHistory, null, 2)}\n`);
   await writeFile(draftPath, `${JSON.stringify(draftWithLocation, null, 2)}\n`);
+  await writeFile(confirmedLocationDraftPath, `${JSON.stringify(draftWithConfirmedLocation, null, 2)}\n`);
 
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
@@ -158,7 +197,7 @@ async function main() {
     assert(historyText.includes("2 筆案件"), "Expected case history count to render.");
     assert(historyText.includes("case-ui-draft"), "Expected second history item to render.");
 
-    await importDraftJson(page, draftPath);
+    await importDraftJson(page, draftPath, "25.022475");
     await page.getByRole("button", { name: "採用候選" }).click();
     const draft = await page.evaluate(() => window.taiwanBestView.currentDraft());
     assert(draft.district === "新莊區", "Expected selected location candidate to fill district.");
@@ -166,13 +205,21 @@ async function main() {
     assert(draft.addressNote.includes("GPS 反查 新北市新莊區中正路"), "Expected selected location candidate to fill address note.");
     assert(draft.locationReview?.status === "confirmed_by_user", "Expected selected location candidate to create locationReview.");
     assert(draft.locationReview?.candidateLabel === "25.022475, 121.426317", "Expected selected location candidate label to be recorded.");
+
+    await importDraftJson(page, confirmedLocationDraftPath, "fixture-confirmed-location");
+    await page.getByRole("button", { name: "採用候選" }).click();
+    const confirmedDraft = await page.evaluate(() => window.taiwanBestView.currentDraft());
+    assert(confirmedDraft.district === "新莊區", "Expected confirmed location candidate to fill district.");
+    assert(confirmedDraft.road === "中正路", "Expected confirmed location candidate to fill road.");
+    assert(confirmedDraft.addressNote.includes("傳品牛排前人行道"), "Expected confirmed location candidate to fill address note.");
+    assert(confirmedDraft.locationReview?.confirmedLocationId === "fixture-confirmed-location", "Expected confirmed location id to be recorded.");
   } finally {
     await browser.close();
   }
 
   console.log(JSON.stringify({
     ok: true,
-    verified: ["case-record import", "case-history import", "location candidate confirmation"],
+    verified: ["case-record import", "case-history import", "location candidate confirmation", "confirmed location candidate confirmation"],
   }, null, 2));
 }
 

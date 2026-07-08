@@ -24,6 +24,7 @@ The project is published as a public GitHub repository:
 - GPS-based location candidate extraction.
 - macOS CoreLocation reverse-geocoding attempt for GPS candidates.
 - Manual location candidate adoption in the browser UI, recorded as `locationReview`.
+- Local confirmed frequent-location recording and reuse as review-only candidates.
 - Apple Vision OCR for plate candidates and location text clues.
 - OCR plate normalization, confidence scoring, confidence reasons, and official form splitting.
 - Field suggestions for plate, district, road, and address note.
@@ -49,12 +50,13 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 - `npm run inspect:metadata`
 - `npm run verify:plate`
 - `npm run verify:readiness`
+- `npm run verify:locations`
 - `npm run official:preflight -- taipei --allow-network --json cases/taipei-live-preflight.json`
 - `npm run official:preflight -- new_taipei --allow-network --json cases/new-taipei-live-preflight.json`
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T160430`
+- `cases/case-20260708T161302`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -69,6 +71,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - New Taipei local fixture fill: `ok`, 19 fields filled, 2 attachments uploaded, no final submit.
 - UI fixture verification: `ok`
 - Location candidate confirmation UI verification: `ok`
+- Confirmed frequent-location candidate verification: `ok`
 - Reporter-profile fixture status: `ready`
 - Reviewed packet status with complete fixture-only case and reporter fields: `ready_for_human_review`
 - Case readiness gate with incomplete real-case fields: `needs_missing_data`, official-site opening blocked.
@@ -83,6 +86,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - CAPTCHA, Email verification, personal-data declarations, and final submit are not bypassed or automated.
 - Reporter identity/profile fields are not invented by the tool and must be provided by the user.
 - GPS and reverse geocoding are only review candidates. Even after the user adopts a candidate, they do not prove the road, direction, or exact legal location.
+- Confirmed frequent locations are local hints only and must be re-checked against the current photo evidence.
 - CoreLocation reverse geocoding can time out or return unavailable.
 - The converted PNG preserves original metadata in draft sidecar data. If `exiftool` is installed, conversion attempts metadata embedding and falls back to sidecar metadata if embedding fails.
 - Taipei's official SPA can time out in headless Playwright during live preflight, so live official checks are diagnostic only.
@@ -93,6 +97,7 @@ Important observed results from the real `test-files/` HEIC photos:
 1. For a real case, fill missing case fields and reporter profile, then run guarded dry-run/prototype commands before manually completing official verification and final submit.
 2. Keep re-running read-only official preflights before real assisted submission because official sites can change selectors.
 3. Run `npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.json` before any live official-site run.
+4. After manually confirming a location, run `npm run record:location -- cases/<case-id>/draft.json` so later cases can reuse it as a review-only candidate.
 
 ## Resume Checklist
 
@@ -104,6 +109,7 @@ npm run check
 npm run inspect:metadata
 npm run verify:plate
 npm run verify:readiness
+npm run verify:locations
 npm run verify:ui
 ```
 

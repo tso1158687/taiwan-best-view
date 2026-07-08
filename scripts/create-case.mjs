@@ -8,11 +8,16 @@ import { createLocationCandidates } from "./lib/location-candidates.mjs";
 import { enrichLocationCandidatesWithReverseGeocode } from "./lib/reverse-geocode.mjs";
 import { analyzePhotos } from "./lib/photo-analysis.mjs";
 import { createFieldSuggestions } from "./lib/field-suggestions.mjs";
+import {
+  createConfirmedLocationCandidates,
+  mergeConfirmedLocationCandidates,
+  readConfirmedLocationLibrary,
+} from "./lib/confirmed-locations.mjs";
 
 const DEFAULT_DESCRIPTION = "車輛停放於違規地點，妨礙通行或影響交通安全。";
 
 function usage() {
-  console.log("Usage: node scripts/create-case.mjs <input-file-or-directory> [--jurisdiction taipei|new_taipei]");
+  console.log("Usage: node scripts/create-case.mjs <input-file-or-directory> [--jurisdiction taipei|new_taipei] [--confirmed-locations path]");
   console.log("");
   console.log("Creates a local case workspace under cases/<case-id>/ and writes draft.json.");
 }
@@ -22,12 +27,16 @@ function parseArgs(argv) {
   const result = {
     input,
     jurisdiction: "taipei",
+    confirmedLocationsPath: "",
   };
 
   for (let index = 3; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--jurisdiction") {
       result.jurisdiction = argv[index + 1] || result.jurisdiction;
+      index += 1;
+    } else if (arg === "--confirmed-locations") {
+      result.confirmedLocationsPath = argv[index + 1] || "";
       index += 1;
     }
   }
@@ -154,8 +163,24 @@ async function main() {
   for (const input of inputs) {
     attachments.push(await processOne(input, caseDirectory));
   }
-  const locationAssistance = await enrichLocationCandidatesWithReverseGeocode(createLocationCandidates(attachments));
   const photoAnalysis = await analyzePhotos(attachments.map((attachment) => attachment.submissionPath));
+  const gpsLocationAssistance = await enrichLocationCandidatesWithReverseGeocode(createLocationCandidates(attachments));
+  let locationAssistance = gpsLocationAssistance;
+
+  if (options.confirmedLocationsPath) {
+    const confirmedLocationLibrary = await readConfirmedLocationLibrary(options.confirmedLocationsPath);
+    const confirmedLocationCandidates = createConfirmedLocationCandidates({
+      library: confirmedLocationLibrary,
+      jurisdiction: options.jurisdiction,
+      locationAssistance: gpsLocationAssistance,
+      photoAnalysis,
+    });
+    locationAssistance = mergeConfirmedLocationCandidates({
+      locationAssistance: gpsLocationAssistance,
+      candidates: confirmedLocationCandidates,
+    });
+  }
+
   const fieldSuggestions = createFieldSuggestions({ photoAnalysis, locationAssistance });
 
   const draft = {
@@ -187,6 +212,8 @@ async function main() {
     submissionFiles: draft.files,
     occurredAtCandidate: draft.occurredAt,
     locationAssistance,
+    confirmedLocationsPath: options.confirmedLocationsPath || "",
+    confirmedLocationCandidateCount: locationAssistance.confirmedLocationCandidateCount || 0,
     fieldSuggestions,
     photoAnalysis: {
       status: photoAnalysis.status,

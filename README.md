@@ -11,6 +11,7 @@ Taiwan Best View is a local-first helper for preparing Taiwan traffic violation 
 - Normalizes OCR plate candidates into official-form-friendly plate parts with confidence reasons.
 - Attempts macOS CoreLocation reverse geocoding for GPS candidates when available.
 - Lets the user manually adopt a GPS/map candidate into the draft as `locationReview`.
+- Records and reuses local confirmed frequent locations as review-only location candidates.
 - Builds submission packets for Taipei and New Taipei.
 - Reviews case readiness before opening official websites for human-reviewed submission.
 - Validates official-site selector manifests and guarded automation stop points.
@@ -50,6 +51,7 @@ Create a local Taipei case from photos:
 
 ```sh
 npm run create:case -- test-files --jurisdiction taipei
+npm run create:case -- test-files --jurisdiction taipei --confirmed-locations confirmed-locations.local.json
 ```
 
 Check local metadata tooling:
@@ -84,6 +86,14 @@ npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.json
 ```
 
 This writes `case-readiness-report.json` next to the draft. It reports missing case fields, reporter-profile readiness, attachment and metadata review notes, official human stop points, and the next safe commands. It does not contact official websites.
+
+Record a confirmed frequent location after you have reviewed a draft:
+
+```sh
+npm run record:location -- cases/<case-id>/draft.json
+```
+
+This writes `confirmed-locations.local.json`. The file is ignored by git because it can reveal places you often report. Pass it back into `create:case` with `--confirmed-locations` to add matching frequent locations as review-only candidates.
 
 Generate guarded automation plans:
 
@@ -146,12 +156,18 @@ Real-case readiness gate verification:
 npm run verify:readiness
 ```
 
+Confirmed frequent-location verification:
+
+```sh
+npm run verify:locations
+```
+
 ## Current Limits
 
 - The generated PNG submission files are visually rendered and metadata is preserved in draft sidecar data.
 - On machines with `exiftool`, conversion attempts metadata embedding and falls back to sidecar metadata if embedding fails. Run `npm run inspect:metadata` to confirm the local mode.
 - GPS and reverse geocoding are only starting points. If Apple CoreLocation times out or returns no placemark, the tool keeps coordinate/map candidates and requires manual confirmation.
-- The location review UI records which candidate the user adopted, but it still does not prove the legal road segment or driving direction.
+- Confirmed frequent locations are convenience hints only. The location review UI records which candidate the user adopted, but it still does not prove the legal road segment or driving direction.
 - Live official-site automation is guarded and should not proceed until real case data and reporter profile fields are complete.
 - `review:case` can report that local data is ready to open the official site for human review, but CAPTCHA, Email verification, declarations, and final submit remain manual.
 - Taipei's official SPA may time out in headless Playwright even when static resources are reachable; use `official:preflight` as a diagnostic rather than a submission path.

@@ -27,6 +27,7 @@ Observed output:
 - Derived occurred-at candidate: `2026-06-12T15:32:11+08:00`
 - Generated one GPS-based location candidate from `IMG_2631.HEIC`
 - Attempted macOS CoreLocation reverse geocoding for the GPS candidate
+- Verified locally confirmed frequent-location matching by GPS distance and OCR text
 - Listed `IMG_2630.HEIC` as missing GPS
 - Extracted OCR text candidates with Apple Vision
 - Extracted normalized plate candidates including `3999-YG` / `3999-B`
@@ -44,6 +45,7 @@ Observed output:
 - Verified real-case readiness reports for missing-data and review-ready states
 - Verified metadata tooling diagnostics for QuickLook plus optional exiftool embedding
 - Verified browser UI location candidate adoption into `locationReview`
+- Verified browser UI confirmed-location candidate adoption into `locationReview`
 - Verified deterministic plate normalization, OCR correction reasons, and official form splitting
 - Re-ran read-only official preflights for Taipei and New Taipei
 - Added `README.md` with installation, verification, safety boundaries, and common workflow commands for public handoff
@@ -132,12 +134,15 @@ Evidence:
 - Frontend has a `照片線索` panel and `欄位建議` panel for imported drafts
 - Frontend can apply imported field suggestions for plate, district, road, and address note
 - Frontend can adopt a GPS/map candidate into the draft as `locationReview` after user review
+- `scripts/record-confirmed-location.mjs` records a user-confirmed draft location into ignored `confirmed-locations.local.json`
+- `scripts/create-case.mjs --confirmed-locations` can add matching frequent locations as review-only candidates using GPS distance and OCR text
+- Frontend can adopt a confirmed frequent-location candidate into `locationReview`
 
 Remaining:
 
 - Reverse geocoding can still be unavailable or timeout depending on Apple service/network state
 - Road/intersection candidates still require a reliable map/geocoder result or manual input
-- Confirmed frequent locations
+- Confirmed frequent locations are local hints and still require manual confirmation against the current evidence
 
 ### Phase 4: Taipei Semi-Automated Form Filling
 
@@ -244,6 +249,7 @@ npm run check
 npm run inspect:metadata
 npm run verify:plate
 npm run verify:readiness
+npm run verify:locations
 npm run verify:ui
 npm run verify:test-files
 npm run inspect:selectors -- taipei
@@ -268,4 +274,4 @@ node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
 find cases/case-20260616T024545/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
-All listed commands completed successfully by the 2026-07-09 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260708T160430`; the latest plate verification returned normalized candidates `3999-YG` and `3999-B` with patterns `four_digits_two_letters` and `four_digits_one_letter_incomplete`; the latest readiness verification returned `caseReadinessStatus: "needs_missing_data"`, `caseReadinessCanOpenOfficialSite: false`, `reviewedCaseReadinessStatus: "ready_for_human_review"`, and `reviewedCaseReadinessCanOpenOfficialSite: true`; the latest reporter-profile fixture verification returned `reviewedPacketStatus: "ready_for_human_review"` and `reporterProfileSummaryStatus: "ready"`; the latest metadata verification returned `metadataEmbeddingStatuses: ["sidecar_only", "sidecar_only"]`; the latest UI fixture verification returned `uiFixtureVerification: "ok"` and covers location candidate confirmation; the latest live official preflight reports were written to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json` with `status: "ok"`.
+All listed commands completed successfully by the 2026-07-09 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260708T161302`; the latest plate verification returned normalized candidates `3999-YG` and `3999-B` with patterns `four_digits_two_letters` and `four_digits_one_letter_incomplete`; the latest readiness verification returned `caseReadinessStatus: "needs_missing_data"`, `caseReadinessCanOpenOfficialSite: false`, `reviewedCaseReadinessStatus: "ready_for_human_review"`, and `reviewedCaseReadinessCanOpenOfficialSite: true`; the latest confirmed-location verification returned one matched frequent-location candidate by GPS distance and OCR text, and UI verification covers confirmed-location candidate confirmation; the latest reporter-profile fixture verification returned `reviewedPacketStatus: "ready_for_human_review"` and `reporterProfileSummaryStatus: "ready"`; the latest metadata verification returned `metadataEmbeddingStatuses: ["sidecar_only", "sidecar_only"]`; the latest UI fixture verification returned `uiFixtureVerification: "ok"` and covers location candidate confirmation; the latest live official preflight reports were written to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json` with `status: "ok"`.

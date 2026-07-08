@@ -297,6 +297,9 @@ function applySuggestion(field, value) {
 }
 
 function candidateAddressNote(candidate) {
+  if (candidate.source === "confirmed_location") {
+    return candidate.addressNote || candidate.label;
+  }
   if (candidate.reverseGeocode?.status === "ok" && candidate.addressLabel) {
     return `GPS 反查 ${candidate.addressLabel}`;
   }
@@ -304,8 +307,8 @@ function candidateAddressNote(candidate) {
 }
 
 function applyLocationCandidate(candidate) {
-  const district = candidate.reverseGeocode?.subLocality || "";
-  const road = candidate.reverseGeocode?.thoroughfare || "";
+  const district = candidate.district || candidate.reverseGeocode?.subLocality || "";
+  const road = candidate.road || candidate.reverseGeocode?.thoroughfare || "";
   const addressNote = candidateAddressNote(candidate);
 
   if (district) form.elements.district.value = district;
@@ -325,6 +328,8 @@ function applyLocationCandidate(candidate) {
     district,
     road,
     addressNote,
+    confirmedLocationId: candidate.confirmedLocationId || "",
+    matchReasons: candidate.matchReasons || [],
     maps: candidate.maps || {},
     note: "User selected this candidate after reviewing map links and photo evidence.",
   };
@@ -560,13 +565,17 @@ function renderLocationAssistance(locationAssistance) {
     title.className = "location-title";
     title.textContent = candidate.label;
     meta.className = "location-meta";
-    meta.textContent = `來源：${candidate.evidenceFiles.join("、")}。GPS 只當初始候選，仍需人工確認路段與方向。`;
+    const sourceLabel = candidate.source === "confirmed_location" ? "常用地點" : "GPS";
+    const reasonText = Array.isArray(candidate.matchReasons) && candidate.matchReasons.length > 0
+      ? `；命中：${candidate.matchReasons.join("、")}`
+      : "";
+    meta.textContent = `來源：${sourceLabel}${candidate.evidenceFiles?.length ? ` / ${candidate.evidenceFiles.join("、")}` : ""}。仍需人工確認路段、方向與照片證據${reasonText}。`;
     links.className = "location-links";
-    appleLink.href = candidate.maps.apple;
+    appleLink.href = candidate.maps?.apple || "#";
     appleLink.target = "_blank";
     appleLink.rel = "noreferrer";
     appleLink.textContent = "Apple Maps";
-    googleLink.href = candidate.maps.google;
+    googleLink.href = candidate.maps?.google || "#";
     googleLink.target = "_blank";
     googleLink.rel = "noreferrer";
     googleLink.textContent = "Google Maps";
@@ -576,7 +585,9 @@ function renderLocationAssistance(locationAssistance) {
     applyButton.textContent = "採用候選";
     applyButton.addEventListener("click", () => applyLocationCandidate(candidate));
 
-    links.append(appleLink, googleLink);
+    if (candidate.maps?.apple || candidate.maps?.google) {
+      links.append(appleLink, googleLink);
+    }
     actions.append(applyButton);
     item.append(title, meta, links, actions);
     locationList.append(item);

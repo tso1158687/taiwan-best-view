@@ -4,4 +4,5 @@ cases/
 test-files/
 reporter-profile.local.json
 reporter-profiles/
+confirmed-locations.local.json
 *.tmp
