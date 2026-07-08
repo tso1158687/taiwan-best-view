@@ -139,6 +139,7 @@ Write and update case records:
 ```sh
 npm run write:case-record -- cases/<case-id>/draft.json cases/<case-id>/submission-packet.json cases/<case-id>/taipei-automation-plan.json
 npm run update:case-record -- cases/<case-id>/case-record.json --case-number TP123456 --lookup-password "manual-password" --submitted-at 2026-06-16T12:00:00+08:00 --submission-status submitted_by_user
+npm run update:case-record -- cases/<case-id>/case-record.json --correction-status needs_action --correction-due-at 2026-06-20T23:59:59+08:00 --correction-item "補上更清楚的車牌照片"
 npm run export:case-record -- cases/<case-id>/case-record.json
 npm run list:cases
 ```

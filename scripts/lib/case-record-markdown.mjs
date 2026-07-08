@@ -1,3 +1,5 @@
+import { summarizeCorrection } from "./case-records.mjs";
+
 function valueOrDash(value) {
   return value ? String(value) : "-";
 }
@@ -13,6 +15,7 @@ function listLines(items) {
 
 export function formatCaseRecordMarkdown(record) {
   const official = record.official || {};
+  const correction = summarizeCorrection(record);
   const attachments = record.attachmentSummary || [];
   const missing = record.missing || [];
   const humanStops = record.requiredHumanStops || [];
@@ -41,8 +44,15 @@ export function formatCaseRecordMarkdown(record) {
     `- Official URL: ${valueOrDash(official.url)}`,
     `- Case number: ${valueOrDash(official.caseNumber)}`,
     `- Submitted at: ${valueOrDash(official.submittedAt)}`,
-    `- Correction status: ${valueOrDash(official.correctionStatus)}`,
+    `- Correction status: ${valueOrDash(correction.status)}`,
+    `- Correction received at: ${valueOrDash(correction.receivedAt)}`,
+    `- Correction due at: ${valueOrDash(correction.dueAt)}`,
+    `- Correction note: ${valueOrDash(correction.note)}`,
     `- Lookup password stored in JSON: ${boolLabel(Boolean(official.lookupPassword))}`,
+    "",
+    "## Correction Items",
+    "",
+    ...listLines(correction.items),
     "",
     "## Required Human Stops",
     "",

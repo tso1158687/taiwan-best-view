@@ -289,18 +289,37 @@ async function main() {
       caseNumber: "TP-FIXTURE-0001",
       lookupPassword: "fixture-only",
       submittedAt: "2026-06-16T12:00:00+08:00",
-      correctionStatus: "none",
+      correctionStatus: "needs_action",
+      correction: {
+        status: "needs_action",
+        receivedAt: "2026-06-17T09:00:00+08:00",
+        dueAt: "2026-06-20T23:59:59+08:00",
+        items: ["補上更清楚的車牌照片", "確認違規地點門牌"],
+        note: "Fixture correction request.",
+      },
     },
   });
   const caseSummary = summarizeCaseRecord(submittedRecord, report.caseDirectory);
   const caseRecordMarkdown = formatCaseRecordMarkdown(submittedRecord);
+  const recordAfterCaseNumberUpdate = updateCaseRecord(submittedRecord, {
+    official: {
+      caseNumber: "TP-FIXTURE-0002",
+    },
+  });
+  const preservedCorrectionSummary = summarizeCaseRecord(recordAfterCaseNumberUpdate, report.caseDirectory);
   await writeFile(join(report.caseDirectory, "case-record.json"), `${JSON.stringify(submittedRecord, null, 2)}\n`);
   await writeFile(join(report.caseDirectory, "case-record-summary.md"), caseRecordMarkdown);
   const completeWorkflowChecklist = await createCaseWorkflowChecklist({ caseDirectory: report.caseDirectory });
   assert(caseSummary.officialCaseNumber === "TP-FIXTURE-0001", "Expected case summary to include official case number.");
   assert(caseSummary.submissionStatus === "submitted_by_user", "Expected case summary to include updated submission status.");
+  assert(caseSummary.correctionStatus === "needs_action", "Expected case summary to include correction status.");
+  assert(caseSummary.correctionDueAt === "2026-06-20T23:59:59+08:00", "Expected case summary to include correction due time.");
+  assert(caseSummary.correctionItemCount === 2, "Expected case summary to include correction item count.");
+  assert(preservedCorrectionSummary.correctionItemCount === 2, "Expected correction items to be preserved when updating unrelated official fields.");
   assert(caseRecordMarkdown.includes("# Case Record Summary"), "Expected case record Markdown title.");
   assert(caseRecordMarkdown.includes("TP-FIXTURE-0001"), "Expected case record Markdown to include official case number.");
+  assert(caseRecordMarkdown.includes("補上更清楚的車牌照片"), "Expected case record Markdown to include correction item.");
+  assert(caseRecordMarkdown.includes("2026-06-20T23:59:59+08:00"), "Expected case record Markdown to include correction due time.");
   assert(caseRecordMarkdown.includes("Lookup password stored in JSON: yes"), "Expected case record Markdown to report lookup password presence.");
   assert(!caseRecordMarkdown.includes("fixture-only"), "Case record Markdown must not expose lookup password value.");
   assert(completeWorkflowChecklist.statuses.submissionPacket === "ready_for_human_review", "Expected workflow checklist to read ready submission packet.");
@@ -360,6 +379,8 @@ async function main() {
     caseRecordStatus: caseRecord.submissionStatus,
     updatedCaseRecordStatus: submittedRecord.submissionStatus,
     caseSummaryOfficialCaseNumber: caseSummary.officialCaseNumber,
+    caseCorrectionStatus: caseSummary.correctionStatus,
+    caseCorrectionItemCount: caseSummary.correctionItemCount,
     caseRecordMarkdownVerification: "ok",
     workflowChecklistVerification: completeWorkflowChecklist.statuses.caseRecord,
     uiFixtureVerification: "ok",

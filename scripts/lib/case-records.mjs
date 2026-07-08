@@ -9,6 +9,34 @@ function attachmentRecord(attachment) {
   };
 }
 
+function hasOwn(object, key) {
+  return Object.prototype.hasOwnProperty.call(object, key);
+}
+
+function createEmptyCorrectionRecord(status = "") {
+  return {
+    status,
+    receivedAt: "",
+    dueAt: "",
+    items: [],
+    note: "",
+  };
+}
+
+export function summarizeCorrection(record) {
+  const official = record.official || {};
+  const correction = official.correction || {};
+  const status = correction.status || official.correctionStatus || "";
+
+  return {
+    status,
+    receivedAt: correction.receivedAt || "",
+    dueAt: correction.dueAt || "",
+    items: Array.isArray(correction.items) ? correction.items : [],
+    note: correction.note || "",
+  };
+}
+
 export function createCaseRecord({ draft, submissionPacket = null, automationPlan = null }) {
   return {
     schemaVersion: 1,
@@ -26,6 +54,7 @@ export function createCaseRecord({ draft, submissionPacket = null, automationPla
       lookupPassword: "",
       submittedAt: "",
       correctionStatus: "",
+      correction: createEmptyCorrectionRecord(),
     },
     requiredHumanStops: automationPlan
       ? automationPlan.steps.filter((step) => step.requiresHuman).map((step) => step.id)
@@ -47,15 +76,27 @@ export function updateCaseRecord(record, updates) {
   if (updates.submissionStatus) next.submissionStatus = updates.submissionStatus;
   if (updates.automationStatus) next.automationStatus = updates.automationStatus;
 
+  const existingCorrection = summarizeCorrection(next);
+  const incomingCorrection = updates.official?.correction || {};
+  const correctionStatus = incomingCorrection.status || updates.official?.correctionStatus || existingCorrection.status;
+
   next.official = {
     ...(next.official || {}),
     ...(updates.official || {}),
+    correctionStatus,
+    correction: {
+      ...existingCorrection,
+      ...incomingCorrection,
+      status: correctionStatus,
+      items: hasOwn(incomingCorrection, "items") ? incomingCorrection.items : existingCorrection.items,
+    },
   };
 
   return next;
 }
 
 export function summarizeCaseRecord(record, caseDirectory = "") {
+  const correction = summarizeCorrection(record);
   return {
     caseId: record.caseId || "",
     caseDirectory,
@@ -68,7 +109,9 @@ export function summarizeCaseRecord(record, caseDirectory = "") {
     automationStatus: record.automationStatus || "",
     officialCaseNumber: record.official?.caseNumber || "",
     submittedAt: record.official?.submittedAt || "",
-    correctionStatus: record.official?.correctionStatus || "",
+    correctionStatus: correction.status,
+    correctionDueAt: correction.dueAt,
+    correctionItemCount: correction.items.length,
     attachmentCount: record.attachmentSummary?.length || 0,
     missingCount: record.missing?.length || 0,
     requiredHumanStopCount: record.requiredHumanStops?.length || 0,

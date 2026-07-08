@@ -68,7 +68,14 @@ async function main() {
       caseNumber: "TP-FIXTURE-0001",
       lookupPassword: "fixture-only",
       submittedAt: "2026-06-16T12:00:00+08:00",
-      correctionStatus: "none",
+      correctionStatus: "needs_action",
+      correction: {
+        status: "needs_action",
+        receivedAt: "2026-06-17T09:00:00+08:00",
+        dueAt: "2026-06-20T23:59:59+08:00",
+        items: ["補上更清楚的車牌照片", "確認違規地點門牌"],
+        note: "Fixture correction request.",
+      },
     },
     requiredHumanStops: ["stop_before_final_submit"],
     missing: [],
@@ -95,7 +102,9 @@ async function main() {
         automationStatus: "blocked_by_missing_data",
         officialCaseNumber: "TP-FIXTURE-0001",
         submittedAt: "2026-06-16T12:00:00+08:00",
-        correctionStatus: "none",
+        correctionStatus: "needs_action",
+        correctionDueAt: "2026-06-20T23:59:59+08:00",
+        correctionItemCount: 2,
         attachmentCount: 2,
         missingCount: 0,
         requiredHumanStopCount: 1,
@@ -292,6 +301,8 @@ async function main() {
     const recordText = await visibleText(page, "#caseRecordPanel");
     assert(recordText.includes("TP-FIXTURE-0001"), "Expected single case record official case number to render.");
     assert(recordText.includes("使用者已手動送件"), "Expected submitted status label to render.");
+    assert(recordText.includes("2026/6/20"), "Expected correction due date to render.");
+    assert(recordText.includes("2 項"), "Expected correction item count to render.");
 
     await importJson(page, historyPath);
     const historyText = await visibleText(page, "#caseRecordPanel");

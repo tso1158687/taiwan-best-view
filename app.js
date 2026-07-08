@@ -424,6 +424,7 @@ function formatRecordStatus(status) {
     blocked_by_missing_data: "缺少資料，已停止",
     submitted_by_user: "使用者已手動送件",
     none: "無補正",
+    needs_action: "需補正",
   };
   return labels[status] || status || "未設定";
 }
@@ -492,6 +493,9 @@ function appendCaseRecordCard(record, titleText) {
   const card = document.createElement("article");
   const title = document.createElement("div");
   const details = document.createElement("div");
+  const correction = record.official?.correction || {};
+  const correctionStatus = correction.status || record.official?.correctionStatus || record.correctionStatus || "";
+  const correctionItems = Array.isArray(correction.items) ? correction.items : [];
 
   card.className = "case-record-card";
   title.className = "case-record-title";
@@ -505,7 +509,9 @@ function appendCaseRecordCard(record, titleText) {
     createDetail("自動化狀態", formatRecordStatus(record.automationStatus)),
     createDetail("官方案號", record.official?.caseNumber || record.officialCaseNumber || ""),
     createDetail("送件時間", formatDateTime(record.official?.submittedAt || record.submittedAt)),
-    createDetail("補正狀態", formatRecordStatus(record.official?.correctionStatus || record.correctionStatus)),
+    createDetail("補正狀態", formatRecordStatus(correctionStatus)),
+    createDetail("補正期限", formatDateTime(correction.dueAt || record.correctionDueAt)),
+    createDetail("補正項目", `${correctionItems.length || record.correctionItemCount || 0} 項`),
     createDetail("附件", `${record.attachmentSummary?.length ?? record.attachmentCount ?? 0} 個`),
     createDetail("缺漏欄位", `${record.missing?.length ?? record.missingCount ?? 0} 個`),
     createDetail("人工停止點", `${record.requiredHumanStops?.length ?? record.requiredHumanStopCount ?? 0} 個`)
