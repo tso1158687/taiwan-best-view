@@ -31,6 +31,8 @@ const VALID_STATUSES = new Set(["draft", "ready_for_review", "submitted"]);
 const VALID_CONVERSION_STATUSES = new Set(["not_required", "pending", "converted", "failed"]);
 const VALID_EXIF_STATUSES = new Set(["not_checked", "pending", "preserved", "partial", "missing", "sidecar"]);
 const VALID_GPS_STATUSES = new Set(["not_checked", "present", "missing"]);
+const VALID_REVIEW_STATUSES = new Set(["confirmed_by_user"]);
+const VALID_FIELD_REVIEW_KEYS = new Set(["plate", "district", "road", "addressNote"]);
 const VALID_METADATA_EMBEDDING_STATUSES = new Set([
   "not_applicable",
   "sidecar_only",
@@ -45,6 +47,10 @@ function hasOwn(object, key) {
 
 function stringValue(value) {
   return typeof value === "string";
+}
+
+function nullableNumber(value) {
+  return typeof value === "number" || value === null;
 }
 
 function addMissingFields({ target, fields, prefix, issues }) {
@@ -94,6 +100,76 @@ function validateAttachment(attachment, index) {
   return issues;
 }
 
+function validateLocationReview(review) {
+  const issues = [];
+
+  if (review === null || review === undefined) {
+    return issues;
+  }
+  if (typeof review !== "object" || Array.isArray(review)) {
+    return ["locationReview.invalid_object"];
+  }
+  if (hasOwn(review, "status") && !VALID_REVIEW_STATUSES.has(review.status)) {
+    issues.push("locationReview.status.invalid");
+  }
+  for (const field of ["confirmedAt", "candidateLabel", "source", "addressLabel", "reverseGeocodeStatus", "district", "road", "addressNote", "note", "confirmedLocationId"]) {
+    if (hasOwn(review, field) && !stringValue(review[field])) {
+      issues.push(`locationReview.${field}.invalid_type`);
+    }
+  }
+  for (const field of ["latitude", "longitude"]) {
+    if (hasOwn(review, field) && !nullableNumber(review[field])) {
+      issues.push(`locationReview.${field}.invalid_type`);
+    }
+  }
+  for (const field of ["evidenceFiles", "matchReasons"]) {
+    if (hasOwn(review, field) && !Array.isArray(review[field])) {
+      issues.push(`locationReview.${field}.invalid_type`);
+    }
+  }
+
+  return issues;
+}
+
+function validateFieldReview(review) {
+  const issues = [];
+
+  if (review === null || review === undefined) {
+    return issues;
+  }
+  if (typeof review !== "object" || Array.isArray(review)) {
+    return ["fieldReview.invalid_object"];
+  }
+
+  for (const [field, value] of Object.entries(review)) {
+    const prefix = `fieldReview.${field}`;
+    if (!VALID_FIELD_REVIEW_KEYS.has(field)) {
+      issues.push(`${prefix}.unknown_field`);
+      continue;
+    }
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      issues.push(`${prefix}.invalid_object`);
+      continue;
+    }
+    if (hasOwn(value, "status") && !VALID_REVIEW_STATUSES.has(value.status)) {
+      issues.push(`${prefix}.status.invalid`);
+    }
+    for (const key of ["confirmedAt", "value", "source", "evidence"]) {
+      if (hasOwn(value, key) && !stringValue(value[key])) {
+        issues.push(`${prefix}.${key}.invalid_type`);
+      }
+    }
+    if (hasOwn(value, "confidence") && !nullableNumber(value.confidence)) {
+      issues.push(`${prefix}.confidence.invalid_type`);
+    }
+    if (hasOwn(value, "requiresReview") && typeof value.requiresReview !== "boolean") {
+      issues.push(`${prefix}.requiresReview.invalid_type`);
+    }
+  }
+
+  return issues;
+}
+
 export function validateCaseDraft(draft) {
   const issues = [];
 
@@ -134,6 +210,12 @@ export function validateCaseDraft(draft) {
     draft.attachments.forEach((attachment, index) => {
       issues.push(...validateAttachment(attachment, index));
     });
+  }
+  if (hasOwn(draft, "locationReview")) {
+    issues.push(...validateLocationReview(draft.locationReview));
+  }
+  if (hasOwn(draft, "fieldReview")) {
+    issues.push(...validateFieldReview(draft.fieldReview));
   }
 
   return {

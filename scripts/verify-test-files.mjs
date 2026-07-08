@@ -75,6 +75,21 @@ async function main() {
   const invalidDraftValidation = validateCaseDraft({
     ...draft,
     jurisdiction: "kaohsiung",
+    locationReview: {
+      status: "auto_confirmed",
+      latitude: "25.0",
+      evidenceFiles: "IMG_0001.HEIC",
+    },
+    fieldReview: {
+      plate: {
+        status: "auto_confirmed",
+        confidence: "high",
+        requiresReview: "yes",
+      },
+      unknownField: {
+        status: "confirmed_by_user",
+      },
+    },
     attachments: [
       {
         ...draft.attachments[0],
@@ -86,6 +101,13 @@ async function main() {
   assert(invalidDraftValidation.status === "invalid", "Expected invalid draft fixture to fail validation.");
   assert(invalidDraftValidation.issues.includes("draft.jurisdiction.invalid"), "Expected invalid jurisdiction issue.");
   assert(invalidDraftValidation.issues.includes("attachments.0.conversionStatus.invalid"), "Expected invalid attachment conversion status issue.");
+  assert(invalidDraftValidation.issues.includes("locationReview.status.invalid"), "Expected invalid location review status issue.");
+  assert(invalidDraftValidation.issues.includes("locationReview.latitude.invalid_type"), "Expected invalid location review latitude issue.");
+  assert(invalidDraftValidation.issues.includes("locationReview.evidenceFiles.invalid_type"), "Expected invalid location review evidenceFiles issue.");
+  assert(invalidDraftValidation.issues.includes("fieldReview.plate.status.invalid"), "Expected invalid field review status issue.");
+  assert(invalidDraftValidation.issues.includes("fieldReview.plate.confidence.invalid_type"), "Expected invalid field review confidence issue.");
+  assert(invalidDraftValidation.issues.includes("fieldReview.plate.requiresReview.invalid_type"), "Expected invalid field review requiresReview issue.");
+  assert(invalidDraftValidation.issues.includes("fieldReview.unknownField.unknown_field"), "Expected unknown field review key issue.");
   const draftOnlyWorkflowChecklist = await createCaseWorkflowChecklist({ caseDirectory: report.caseDirectory });
   assert(draftOnlyWorkflowChecklist.draftValidation.status === "ok", "Expected workflow checklist to validate draft.");
   assert(draftOnlyWorkflowChecklist.statuses.submissionPacket === "missing", "Expected workflow checklist to report missing submission packet.");
@@ -363,6 +385,7 @@ async function main() {
     submissionPacketStatus: packet.status,
     submissionPacketMissing: packet.missing,
     caseDraftValidationStatus: draftValidation.status,
+    invalidDraftReviewIssueCount: invalidDraftValidation.issues.filter((issue) => issue.includes("Review")).length,
     caseReadinessStatus: readinessReport.status,
     caseReadinessCanOpenOfficialSite: readinessReport.canOpenOfficialSiteForHumanReview,
     reviewedPacketStatus: readyPacket.status,
