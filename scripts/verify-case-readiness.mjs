@@ -3,6 +3,7 @@ import { mkdtemp, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createCaseReadinessReport } from "./lib/case-readiness.mjs";
+import { formatCaseReadinessMarkdown } from "./lib/case-readiness-markdown.mjs";
 
 function assert(condition, message) {
   if (!condition) {
@@ -112,6 +113,10 @@ async function main() {
     reporterProfile,
     draftPath: "/tmp/draft.json",
   });
+  const readyMarkdown = formatCaseReadinessMarkdown({
+    ...readyReport,
+    commandHints: ["npm run prepare:submission -- /tmp/draft.json /tmp/reporter-profile.local.json"],
+  });
 
   assert(readyReport.status === "ready_for_human_review", "Expected complete local data to be ready for human review.");
   assert(readyReport.canOpenOfficialSiteForHumanReview === true, "Expected ready case to allow human-reviewed official site opening.");
@@ -119,6 +124,11 @@ async function main() {
   assert(readyReport.reporterProfile.status === "ready", "Expected reporter profile summary to be ready.");
   assert(!JSON.stringify(readyReport.reporterProfile).includes("A123456789"), "Reporter summary must not expose identity number.");
   assert(readyReport.reviewItems.some((item) => item.id === "official_human_stops" && item.status === "human_required"), "Expected human stop review item.");
+  assert(readyMarkdown.includes("# Case Readiness Checklist"), "Expected markdown checklist title.");
+  assert(readyMarkdown.includes("final_submit"), "Expected markdown to include final submit stop point.");
+  assert(readyMarkdown.includes("npm run prepare:submission"), "Expected markdown to include command hints.");
+  assert(!readyMarkdown.includes("A123456789"), "Markdown checklist must not expose identity number.");
+  assert(!readyMarkdown.includes("fixture@example.com"), "Markdown checklist must not expose email value.");
 
   console.log(JSON.stringify({
     ok: true,
@@ -126,7 +136,7 @@ async function main() {
     readyStatus: readyReport.status,
     canOpenOfficialSiteForHumanReview: readyReport.canOpenOfficialSiteForHumanReview,
     finalSubmitAutomated: readyReport.finalSubmitAutomated,
-    verified: ["missing data gate", "reporter privacy summary", "human official-site stop boundary"],
+    verified: ["missing data gate", "reporter privacy summary", "human official-site stop boundary", "markdown checklist"],
   }, null, 2));
 }
 

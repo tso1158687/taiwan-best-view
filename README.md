@@ -14,6 +14,7 @@ Taiwan Best View is a local-first helper for preparing Taiwan traffic violation 
 - Records and reuses local confirmed frequent locations as review-only location candidates.
 - Builds submission packets for Taipei and New Taipei.
 - Reviews case readiness before opening official websites for human-reviewed submission.
+- Writes human-readable readiness checklists for official-site manual review.
 - Validates official-site selector manifests and guarded automation stop points.
 - Runs Playwright fixture fills locally without contacting official websites.
 - Records local case status, official case number, lookup password, and correction status after manual submission.
@@ -83,9 +84,10 @@ Review whether a case is ready to open on the official website:
 ```sh
 npm run review:case -- cases/<case-id>/draft.json
 npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.json
+npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.json --markdown cases/<case-id>/case-readiness-checklist.md
 ```
 
-This writes `case-readiness-report.json` next to the draft. It reports missing case fields, reporter-profile readiness, attachment and metadata review notes, official human stop points, and the next safe commands. It does not contact official websites. You can import the report with the browser UI's `匯入 JSON` button.
+This writes `case-readiness-report.json` and `case-readiness-checklist.md` next to the draft by default. They report missing case fields, reporter-profile readiness, attachment and metadata review notes, official human stop points, and the next safe commands. They do not contact official websites. The checklist intentionally omits reporter-profile values; you can import the JSON report with the browser UI's `匯入 JSON` button.
 
 Record a confirmed frequent location after you have reviewed a draft:
 

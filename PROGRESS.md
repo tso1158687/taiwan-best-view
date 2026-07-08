@@ -30,6 +30,7 @@ The project is published as a public GitHub repository:
 - Field suggestions for plate, district, road, and address note.
 - Submission packet generation for Taipei and New Taipei.
 - Real-case readiness reports that gate official-site opening on complete local case and reporter data.
+- Human-readable readiness Markdown checklists that omit reporter-profile values.
 - Local reporter profile validation and submission-packet integration.
 - Guarded automation plans that stop before CAPTCHA, Email verification, declarations, and final submit.
 - Official selector manifests for Taipei and New Taipei.
@@ -56,7 +57,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T161922`
+- `cases/case-20260708T162304`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -77,6 +78,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - Reviewed packet status with complete fixture-only case and reporter fields: `ready_for_human_review`
 - Case readiness gate with incomplete real-case fields: `needs_missing_data`, official-site opening blocked.
 - Case readiness gate with complete fixture-only case and reporter fields: `ready_for_human_review`, official-site opening allowed for human review only.
+- Case readiness Markdown checklist verification: `ok`, reporter-profile values omitted.
 - Metadata embedding statuses on this machine: `sidecar_only`, `sidecar_only`
 - Latest Taipei official preflight: `ok`, 6 present selectors, 3 deferred selectors, 0 missing selectors.
 - Latest New Taipei official preflight: `ok`, 20 present selectors, 0 missing selectors.

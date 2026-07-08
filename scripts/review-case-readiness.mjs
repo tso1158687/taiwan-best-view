@@ -2,9 +2,10 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { createCaseReadinessReport } from "./lib/case-readiness.mjs";
+import { formatCaseReadinessMarkdown } from "./lib/case-readiness-markdown.mjs";
 
 function usage() {
-  console.log("Usage: node scripts/review-case-readiness.mjs <case-draft.json> [reporter-profile.json] [--json output.json]");
+  console.log("Usage: node scripts/review-case-readiness.mjs <case-draft.json> [reporter-profile.json] [--json output.json] [--markdown output.md]");
   console.log("");
   console.log("Creates a local readiness report for human-reviewed official-site submission.");
   console.log("Does not contact official websites, bypass CAPTCHA, or submit anything.");
@@ -15,12 +16,16 @@ function parseArgs(argv) {
     draftPath: argv[2],
     reporterPath: "",
     jsonPath: "",
+    markdownPath: "",
   };
 
   for (let index = 3; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--json") {
       result.jsonPath = argv[index + 1] || "";
+      index += 1;
+    } else if (arg === "--markdown") {
+      result.markdownPath = argv[index + 1] || "";
       index += 1;
     } else if (!result.reporterPath) {
       result.reporterPath = arg;
@@ -66,14 +71,19 @@ async function main() {
   const outputPath = options.jsonPath
     ? resolve(options.jsonPath)
     : join(dirname(draftPath), "case-readiness-report.json");
+  const markdownPath = options.markdownPath
+    ? resolve(options.markdownPath)
+    : join(dirname(draftPath), "case-readiness-checklist.md");
   const output = {
     ...report,
     commandHints: commandHints({ draftPath, reporterPath, report }),
   };
 
   await writeFile(outputPath, `${JSON.stringify(output, null, 2)}\n`);
+  await writeFile(markdownPath, formatCaseReadinessMarkdown(output));
   console.log(JSON.stringify({
     outputPath,
+    markdownPath,
     status: output.status,
     canOpenOfficialSiteForHumanReview: output.canOpenOfficialSiteForHumanReview,
     jurisdiction: output.jurisdiction,

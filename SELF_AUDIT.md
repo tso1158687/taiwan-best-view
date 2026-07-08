@@ -43,6 +43,7 @@ Observed output:
 - Verified local case-record update and case-summary logic for post-submission official case numbers
 - Verified reporter-profile validation and review-ready packet generation with fixture-only reporter data
 - Verified real-case readiness reports for missing-data and review-ready states
+- Verified case-readiness Markdown checklist generation without reporter-profile values
 - Verified browser UI import for `case-readiness-report.json`
 - Verified metadata tooling diagnostics for QuickLook plus optional exiftool embedding
 - Verified browser UI location candidate adoption into `locationReview`
@@ -155,6 +156,7 @@ Evidence:
 
 - `scripts/prepare-submission.mjs` generates `submission-packet.json` from a case draft
 - `scripts/review-case-readiness.mjs` generates `case-readiness-report.json` from a case draft and optional reporter profile without contacting official sites
+- `scripts/review-case-readiness.mjs` also generates `case-readiness-checklist.md` with a human-readable checklist and omitted reporter-profile values
 - Browser UI can import and display `case-readiness-report.json`, including missing fields, official human stop points, and next steps
 - The Taipei packet points to `https://prsweb.tcpd.gov.tw/`
 - The packet maps case date/time, plate parts, district, road, address note, fact, description, and attachments into a stable structure for automation
@@ -263,7 +265,7 @@ npm run official:preflight -- taipei --allow-network --json cases/taipei-live-pr
 npm run official:preflight -- new_taipei --allow-network --json cases/new-taipei-live-preflight.json
 npm run create:case -- test-files --jurisdiction taipei
 npm run prepare:submission -- cases/case-20260616T031513/draft.json
-npm run review:case -- cases/case-20260616T031513/draft.json
+npm run review:case -- cases/case-20260616T031513/draft.json --markdown cases/case-20260616T031513/case-readiness-checklist.md
 npm run taipei:dry-run -- cases/case-20260616T031513/submission-packet.json
 npm run fixture:fill -- cases/case-20260616T031513/submission-packet.json --jurisdiction taipei
 npm run fixture:fill -- cases/case-20260616T031513/submission-packet.json --jurisdiction new_taipei
@@ -279,4 +281,4 @@ node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
 find cases/case-20260616T024545/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
-All listed commands completed successfully by the 2026-07-09 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260708T161922`; the latest plate verification returned normalized candidates `3999-YG` and `3999-B` with patterns `four_digits_two_letters` and `four_digits_one_letter_incomplete`; the latest readiness verification returned `caseReadinessStatus: "needs_missing_data"`, `caseReadinessCanOpenOfficialSite: false`, `reviewedCaseReadinessStatus: "ready_for_human_review"`, and `reviewedCaseReadinessCanOpenOfficialSite: true`; the latest confirmed-location verification returned one matched frequent-location candidate by GPS distance and OCR text, and UI verification covers confirmed-location candidate confirmation; the latest reporter-profile fixture verification returned `reviewedPacketStatus: "ready_for_human_review"` and `reporterProfileSummaryStatus: "ready"`; the latest metadata verification returned `metadataEmbeddingStatuses: ["sidecar_only", "sidecar_only"]`; the latest UI fixture verification returned `uiFixtureVerification: "ok"` and covers case-readiness import, location candidate confirmation, and confirmed-location candidate confirmation; the latest live official preflight reports were written to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json` with `status: "ok"`.
+All listed commands completed successfully by the 2026-07-09 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260708T162304`; the latest plate verification returned normalized candidates `3999-YG` and `3999-B` with patterns `four_digits_two_letters` and `four_digits_one_letter_incomplete`; the latest readiness verification returned `caseReadinessStatus: "needs_missing_data"`, `caseReadinessCanOpenOfficialSite: false`, `reviewedCaseReadinessStatus: "ready_for_human_review"`, and `reviewedCaseReadinessCanOpenOfficialSite: true`; the latest readiness Markdown verification included `final_submit` and command hints while omitting fixture identity number and email values; the latest confirmed-location verification returned one matched frequent-location candidate by GPS distance and OCR text, and UI verification covers confirmed-location candidate confirmation; the latest reporter-profile fixture verification returned `reviewedPacketStatus: "ready_for_human_review"` and `reporterProfileSummaryStatus: "ready"`; the latest metadata verification returned `metadataEmbeddingStatuses: ["sidecar_only", "sidecar_only"]`; the latest UI fixture verification returned `uiFixtureVerification: "ok"` and covers case-readiness import, location candidate confirmation, and confirmed-location candidate confirmation; the latest live official preflight reports were written to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json` with `status: "ok"`.
