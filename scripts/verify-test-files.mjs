@@ -98,6 +98,11 @@ async function main() {
       },
     ],
   });
+  const emptyAttachmentDraftValidation = validateCaseDraft({
+    ...draft,
+    files: [],
+    attachments: [],
+  });
   assert(draftValidation.status === "ok", "Expected generated draft to pass case-draft validation.");
   assert(typeof draft.createdAt === "string" && draft.createdAt.length > 0, "Expected generated draft to include createdAt.");
   assert(invalidDraftValidation.status === "invalid", "Expected invalid draft fixture to fail validation.");
@@ -111,6 +116,9 @@ async function main() {
   assert(invalidDraftValidation.issues.includes("fieldReview.plate.confidence.invalid_type"), "Expected invalid field review confidence issue.");
   assert(invalidDraftValidation.issues.includes("fieldReview.plate.requiresReview.invalid_type"), "Expected invalid field review requiresReview issue.");
   assert(invalidDraftValidation.issues.includes("fieldReview.unknownField.unknown_field"), "Expected unknown field review key issue.");
+  assert(emptyAttachmentDraftValidation.status === "invalid", "Expected empty attachment draft fixture to fail validation.");
+  assert(emptyAttachmentDraftValidation.issues.includes("draft.files.empty"), "Expected empty files issue.");
+  assert(emptyAttachmentDraftValidation.issues.includes("draft.attachments.empty"), "Expected empty attachments issue.");
   const draftOnlyWorkflowChecklist = await createCaseWorkflowChecklist({ caseDirectory: report.caseDirectory });
   assert(draftOnlyWorkflowChecklist.draftValidation.status === "ok", "Expected workflow checklist to validate draft.");
   assert(draftOnlyWorkflowChecklist.statuses.submissionPacket === "missing", "Expected workflow checklist to report missing submission packet.");
@@ -390,6 +398,7 @@ async function main() {
     submissionPacketMissing: packet.missing,
     caseDraftValidationStatus: draftValidation.status,
     draftCreatedAtPresent: Boolean(draft.createdAt),
+    emptyAttachmentDraftStatus: emptyAttachmentDraftValidation.status,
     invalidDraftReviewIssueCount: invalidDraftValidation.issues.filter((issue) => issue.includes("Review")).length,
     caseReadinessStatus: readinessReport.status,
     caseReadinessCanOpenOfficialSite: readinessReport.canOpenOfficialSiteForHumanReview,

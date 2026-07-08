@@ -53,6 +53,7 @@
       "items": {
         "type": "string"
       },
+      "minItems": 1,
       "maxItems": 5
     },
     "attachments": {
@@ -142,6 +143,7 @@
           }
         }
       },
+      "minItems": 1,
       "maxItems": 5
     },
     "locationAssistance": {

@@ -198,6 +198,7 @@ export function validateCaseDraft(draft) {
   if (hasOwn(draft, "files") && !Array.isArray(draft.files)) {
     issues.push("draft.files.invalid_type");
   } else if (Array.isArray(draft.files)) {
+    if (draft.files.length < 1) issues.push("draft.files.empty");
     if (draft.files.length > 5) issues.push("draft.files.too_many");
     draft.files.forEach((file, index) => {
       if (!stringValue(file)) issues.push(`draft.files.${index}.invalid_type`);
@@ -206,6 +207,7 @@ export function validateCaseDraft(draft) {
   if (hasOwn(draft, "attachments") && !Array.isArray(draft.attachments)) {
     issues.push("draft.attachments.invalid_type");
   } else if (Array.isArray(draft.attachments)) {
+    if (draft.attachments.length < 1) issues.push("draft.attachments.empty");
     if (draft.attachments.length > 5) issues.push("draft.attachments.too_many");
     draft.attachments.forEach((attachment, index) => {
       issues.push(...validateAttachment(attachment, index));
