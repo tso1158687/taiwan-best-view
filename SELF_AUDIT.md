@@ -83,10 +83,12 @@ Evidence:
 - Browser UI imports `case-readiness-report.json` for pre-official-site readiness review
 - Browser UI imports `case-workflow-checklist.json` for local workflow artifact review
 - HEIC/HEIF upload is detected and shown as requiring conversion to an official-site-compatible format
+- Browser UI displays imported attachment conversion and EXIF states, including EXIF-verified converted files and pending conversion files
 - `scripts/create-case.mjs` accepts official-compatible video attachments, preserves them as submission files, and skips photo OCR for video-only cases
 - Playwright UI fixture verification imports both single-case and case-history JSON files
 - Playwright UI fixture verification imports case-readiness reports
 - Playwright UI fixture verification imports case-workflow checklists
+- Playwright UI fixture verification confirms attachment badges for `已轉檔，EXIF 已驗證` and `待轉檔`
 - Verification confirmed `caseDraftValidationStatus: "ok"` for generated drafts and rejects invalid jurisdiction, empty attachments, oversized attachments, inconsistent official attachment acceptance, attachment conversion status, `locationReview`, and `fieldReview` fixtures
 - Verification confirmed `videoAttachmentStatus: "not_required"`, `videoAttachmentAcceptedByOfficial: true`, and `videoOnlyPhotoAnalysisStatus: "skipped"` for a New Taipei MP4 fixture
 - Verification confirmed `workflowChecklistVerification: "submitted_by_user"` and `workflowNextAction: "workflow_complete"` after local packet, readiness, plan, record, and summary artifacts were written

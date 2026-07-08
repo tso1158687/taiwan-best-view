@@ -232,9 +232,36 @@ async function main() {
     addressNote: "",
     fact: "違規停車",
     description: "車輛停放於違規地點，妨礙通行或影響交通安全。",
-    files: [],
-    originalFiles: [],
-    attachments: [],
+    files: ["IMG_2631.png", "IMG_2630.png"],
+    originalFiles: ["IMG_2631.HEIC", "IMG_2630.HEIC"],
+    attachments: [
+      {
+        originalName: "IMG_2631.HEIC",
+        submissionName: "IMG_2631.png",
+        originalExtension: "heic",
+        submissionExtension: "png",
+        size: 1000000,
+        type: "heic",
+        needsConversion: true,
+        conversionStatus: "converted",
+        exifStatus: "sidecar",
+        gpsStatus: "present",
+        acceptedByOfficial: true,
+      },
+      {
+        originalName: "IMG_2630.HEIC",
+        submissionName: "IMG_2630.png",
+        originalExtension: "heic",
+        submissionExtension: "png",
+        size: 900000,
+        type: "heic",
+        needsConversion: true,
+        conversionStatus: "pending",
+        exifStatus: "pending",
+        gpsStatus: "missing",
+        acceptedByOfficial: true,
+      },
+    ],
     locationAssistance: {
       status: "needs_review",
       missingGpsAttachments: ["IMG_2630.HEIC"],
@@ -375,6 +402,9 @@ async function main() {
     assert(workflowText.includes("taipei:prototype"), "Expected workflow next command to render.");
 
     await importDraftJson(page, draftPath, "25.022475");
+    const importedAttachmentText = await visibleText(page, "#fileList");
+    assert(importedAttachmentText.includes("已轉檔，EXIF 已驗證"), "Expected converted imported attachment EXIF status to render.");
+    assert(importedAttachmentText.includes("待轉檔"), "Expected pending HEIC imported attachment status to render.");
     await page.getByRole("button", { name: "採用候選" }).click();
     const draft = await page.evaluate(() => window.taiwanBestView.currentDraft());
     assert(typeof draft.createdAt === "string" && draft.createdAt.length > 0, "Expected UI draft to include createdAt.");

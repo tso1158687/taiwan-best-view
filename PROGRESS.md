@@ -89,6 +89,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - Case readiness report UI import verification: `ok`
 - Location candidate confirmation UI verification: `ok`
 - Field suggestion confirmation UI verification: `ok`, adopted plate suggestion recorded in `fieldReview`.
+- Attachment status UI verification: `ok`, imported drafts show converted EXIF-verified attachments and pending conversion attachments.
 - Confirmed frequent-location candidate verification: `ok`
 - Reporter-profile fixture status: `ready`
 - Encrypted reporter-profile fixture verification: `ok`, encrypted envelope does not contain fixture identity number or email plaintext.

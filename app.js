@@ -102,6 +102,41 @@ function replaceExtension(fileName, extension) {
   return `${baseName}.${extension}`;
 }
 
+function attachmentBadge(attachment) {
+  if (attachment.conversionStatus === "converted") {
+    if (["preserved", "sidecar"].includes(attachment.exifStatus)) {
+      return {
+        text: "已轉檔，EXIF 已驗證",
+        ready: true,
+      };
+    }
+
+    return {
+      text: "已轉檔，EXIF 需人工確認",
+      ready: false,
+    };
+  }
+
+  if (attachment.needsConversion) {
+    return {
+      text: "待轉檔",
+      ready: false,
+    };
+  }
+
+  if (attachment.acceptedByOfficial) {
+    return {
+      text: "可送件格式",
+      ready: true,
+    };
+  }
+
+  return {
+    text: "不支援",
+    ready: false,
+  };
+}
+
 function createAttachmentSummary(file, jurisdiction) {
   const originalExtension = getFileExtension(file.name);
   const needsConversion = HEIC_EXTENSIONS.has(originalExtension);
@@ -221,15 +256,10 @@ function renderFiles() {
       item.querySelector(".file-meta").textContent = formatBytes(attachment.size || 0);
 
       const badge = item.querySelector(".file-badge");
-      if (attachment.conversionStatus === "converted") {
-        badge.textContent = attachment.exifStatus === "partial" ? "已轉檔，EXIF 部分" : "已轉檔";
-      } else if (attachment.needsConversion) {
-        badge.textContent = "需轉 PNG";
-      } else if (attachment.acceptedByOfficial) {
-        badge.textContent = "可送件格式";
+      const badgeState = attachmentBadge(attachment);
+      badge.textContent = badgeState.text;
+      if (badgeState.ready) {
         badge.classList.add("is-ready");
-      } else {
-        badge.textContent = "不支援";
       }
 
       fileList.append(item);
@@ -247,13 +277,10 @@ function renderFiles() {
     item.querySelector(".file-meta").textContent = formatBytes(file.size);
 
     const badge = item.querySelector(".file-badge");
-    if (attachment.needsConversion) {
-      badge.textContent = "需轉 PNG";
-    } else if (attachment.acceptedByOfficial) {
-      badge.textContent = "可送件格式";
+    const badgeState = attachmentBadge(attachment);
+    badge.textContent = badgeState.text;
+    if (badgeState.ready) {
       badge.classList.add("is-ready");
-    } else {
-      badge.textContent = "不支援";
     }
 
     fileList.append(item);
