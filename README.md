@@ -144,7 +144,10 @@ Run local browser fixture fills:
 ```sh
 npm run fixture:fill -- cases/<case-id>/submission-packet.json --jurisdiction taipei
 npm run fixture:fill -- cases/<case-id>/submission-packet.json --jurisdiction new_taipei
+npm run fixture:plan -- cases/<case-id>/submission-packet.json cases/<case-id>/taipei-automation-plan.json
 ```
+
+`fixture:plan` follows the guarded automation plan against a local official-like page and stops at the first human gate. It does not contact official websites, click verification controls, or submit forms.
 
 Write and update case records:
 

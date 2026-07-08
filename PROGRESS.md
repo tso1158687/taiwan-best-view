@@ -64,7 +64,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T175624`
+- `cases/case-20260708T180021`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -101,6 +101,8 @@ Important observed results from the real `test-files/` HEIC photos:
 - Pre-submit review summary verification: `manual_required`, 2 attachments, reporter identity number and email omitted.
 - Taipei guarded dry-run manual stops: 4, including `review_pre_submit_summary`.
 - New Taipei guarded dry-run manual stops: 5, including `review_pre_submit_summary`.
+- Taipei plan-aware fixture verification: `stopped_at_human_gate`, stopped at `stop_before_email_verification`, no final submit, no official URL contacted.
+- New Taipei plan-aware fixture verification: `stopped_at_human_gate`, stopped at `stop_before_disclaimer`, no final submit, no official URL contacted.
 - Case readiness gate with incomplete real-case fields: `needs_missing_data`, official-site opening blocked.
 - Case readiness gate with complete fixture-only case, reporter fields, and fresh official preflight: `ready_for_human_review`, official-site opening allowed for human review only.
 - Occurred-at freshness verification: `older_than_review_window`, timestamp risk is shown as a review warning.

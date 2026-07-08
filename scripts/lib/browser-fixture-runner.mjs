@@ -139,6 +139,55 @@ async function existingAttachmentPaths(packet) {
   return paths;
 }
 
+function fieldGroup(fieldKey) {
+  if (fieldKey.startsWith("reporter.")) return "reporter";
+  if (fieldKey.startsWith("case.")) return "case";
+  if (fieldKey === "attachments") return "attachments";
+  return "other";
+}
+
+async function fillFieldGroup({ page, manifest, packet, group }) {
+  const filled = [];
+  for (const [fieldKey, field] of Object.entries(manifest.fields)) {
+    if (fieldGroup(fieldKey) !== group) continue;
+    const locator = fieldLocator(field);
+    const value = String(valueFromPacket(fieldKey, packet) || "");
+    if (!locator || !value) continue;
+    await page.locator(locator).first().fill(value);
+    filled.push({ field: fieldKey, locator, valueLength: value.length, group });
+  }
+  return filled;
+}
+
+async function uploadAttachments({ page, manifest, packet }) {
+  const attachmentPaths = await existingAttachmentPaths(packet);
+  if (attachmentPaths.length > 0) {
+    const attachmentLocator = page.locator(manifest.fields.attachments.selector);
+    const attachmentInputCount = await attachmentLocator.count();
+    if (attachmentInputCount > 1) {
+      for (let index = 0; index < Math.min(attachmentPaths.length, attachmentInputCount); index += 1) {
+        await attachmentLocator.nth(index).setInputFiles(attachmentPaths[index]);
+      }
+    } else {
+      await attachmentLocator.first().setInputFiles(attachmentPaths);
+    }
+  }
+
+  const uploadedAttachmentNameLists = await page
+    .locator(manifest.fields.attachments.selector)
+    .evaluateAll((inputs) => inputs.map((input) => Array.from(input.files || []).map((file) => file.name)));
+  return uploadedAttachmentNameLists.flat();
+}
+
+async function collectHumanStopPresence({ page, manifest }) {
+  const humanStopPresence = {};
+  for (const [key, stop] of Object.entries(manifest.humanStops)) {
+    const selector = stop.selector || stop.forbiddenSelector || stop.nextButtonSelector;
+    humanStopPresence[key] = selector ? await page.locator(selector).count() : 0;
+  }
+  return humanStopPresence;
+}
+
 export async function createReviewedPacketForFixture(packet) {
   const reviewed = structuredClone(packet);
   const occurredAtParts = reviewed.caseData?.occurredAtParts || {};
@@ -187,39 +236,11 @@ export async function runFixtureFill({ jurisdiction, packet, outputPath = "" }) 
 
   await page.setContent(html);
 
-  const filled = [];
-  for (const [fieldKey, field] of Object.entries(manifest.fields)) {
-    if (fieldKey === "attachments") continue;
-    const locator = fieldLocator(field);
-    const value = String(valueFromPacket(fieldKey, packet) || "");
-    if (!locator || !value) continue;
-    await page.locator(locator).first().fill(value);
-    filled.push({ field: fieldKey, locator, valueLength: value.length });
-  }
-
-  const attachmentPaths = await existingAttachmentPaths(packet);
-  if (attachmentPaths.length > 0) {
-    const attachmentLocator = page.locator(manifest.fields.attachments.selector);
-    const attachmentInputCount = await attachmentLocator.count();
-    if (attachmentInputCount > 1) {
-      for (let index = 0; index < Math.min(attachmentPaths.length, attachmentInputCount); index += 1) {
-        await attachmentLocator.nth(index).setInputFiles(attachmentPaths[index]);
-      }
-    } else {
-      await attachmentLocator.first().setInputFiles(attachmentPaths);
-    }
-  }
-
-  const uploadedAttachmentNameLists = await page
-    .locator(manifest.fields.attachments.selector)
-    .evaluateAll((inputs) => inputs.map((input) => Array.from(input.files || []).map((file) => file.name)));
-  const uploadedAttachmentNames = uploadedAttachmentNameLists.flat();
-
-  const humanStopPresence = {};
-  for (const [key, stop] of Object.entries(manifest.humanStops)) {
-    const selector = stop.selector || stop.forbiddenSelector || stop.nextButtonSelector;
-    humanStopPresence[key] = selector ? await page.locator(selector).count() : 0;
-  }
+  const reporterFields = await fillFieldGroup({ page, manifest, packet, group: "reporter" });
+  const caseFields = await fillFieldGroup({ page, manifest, packet, group: "case" });
+  const filled = [...reporterFields, ...caseFields];
+  const uploadedAttachmentNames = await uploadAttachments({ page, manifest, packet });
+  const humanStopPresence = await collectHumanStopPresence({ page, manifest });
 
   const events = await page.evaluate(() => window.__events);
   await browser.close();
@@ -242,6 +263,91 @@ export async function runFixtureFill({ jurisdiction, packet, outputPath = "" }) 
     outputPath,
   };
 
+  if (report.finalSubmitTriggered || report.humanStopTriggered) {
+    report.status = "unsafe_event_triggered";
+  }
+
+  return report;
+}
+
+export async function runPlanFixture({ jurisdiction, packet, plan, outputPath = "" }) {
+  const { chromium } = await import("playwright");
+  const manifest = getOfficialSelectorManifest(jurisdiction);
+  const validation = validateSelectorManifest(jurisdiction);
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+  const html = createOfficialFixtureHtml(jurisdiction);
+
+  await page.setContent(html);
+
+  const executedSteps = [];
+  const blockedSteps = [];
+  const filled = [];
+  let stoppedAtStepId = "";
+  let stoppedAtTitle = "";
+  let uploadedAttachmentNames = [];
+
+  for (const step of plan.steps || []) {
+    if (step.status === "blocked") {
+      blockedSteps.push({ id: step.id, reason: step.stopReason });
+      break;
+    }
+    if (step.requiresHuman || step.action === "stop") {
+      stoppedAtStepId = step.id;
+      stoppedAtTitle = step.title;
+      break;
+    }
+
+    executedSteps.push({ id: step.id, action: step.action, status: step.status });
+    if (step.action === "fill_reporter_fields") {
+      const reporterFields = await fillFieldGroup({ page, manifest, packet, group: "reporter" });
+      filled.push(...reporterFields);
+    } else if (step.action === "fill_case_fields") {
+      const caseFields = await fillFieldGroup({ page, manifest, packet, group: "case" });
+      filled.push(...caseFields);
+    } else if (step.action === "upload_files") {
+      uploadedAttachmentNames = await uploadAttachments({ page, manifest, packet });
+    }
+  }
+
+  const humanStopPresence = await collectHumanStopPresence({ page, manifest });
+  const events = await page.evaluate(() => window.__events);
+  await browser.close();
+
+  const filledGroups = {
+    reporter: filled.filter((item) => item.group === "reporter").length,
+    case: filled.filter((item) => item.group === "case").length,
+  };
+
+  const report = {
+    generatedAt: new Date().toISOString(),
+    jurisdiction,
+    mode: "local_fixture_plan_runner",
+    status: stoppedAtStepId ? "stopped_at_human_gate" : "completed_without_human_gate",
+    externalSideEffects: false,
+    officialUrlContacted: false,
+    finalSubmitTriggered: events.some((event) => event.type === "submit"),
+    humanStopTriggered: events.some((event) => event.type === "human-stop-click"),
+    selectorValidation: validation,
+    executedSteps,
+    stoppedAtStepId,
+    stoppedAtTitle,
+    blockedSteps,
+    filledFieldCount: filled.length,
+    filledGroups,
+    filled,
+    uploadedAttachmentCount: uploadedAttachmentNames.length,
+    uploadedAttachmentNames: uploadedAttachmentNames.map((name) => basename(name)),
+    humanStopPresence,
+    outputPath,
+  };
+
+  if (validation.status !== "ok") {
+    report.status = "needs_selector_update";
+  }
+  if (blockedSteps.length > 0) {
+    report.status = "blocked_step";
+  }
   if (report.finalSubmitTriggered || report.humanStopTriggered) {
     report.status = "unsafe_event_triggered";
   }

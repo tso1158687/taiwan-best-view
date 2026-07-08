@@ -15,7 +15,7 @@ import { formatCaseRecordMarkdown } from "./lib/case-record-markdown.mjs";
 import { validateCaseDraft } from "./lib/case-draft-validation.mjs";
 import { createCaseWorkflowChecklist } from "./lib/case-workflow-checklist.mjs";
 import { validateSelectorManifest } from "./lib/official-selector-manifests.mjs";
-import { createReviewedPacketForFixture, runFixtureFill } from "./lib/browser-fixture-runner.mjs";
+import { createReviewedPacketForFixture, runFixtureFill, runPlanFixture } from "./lib/browser-fixture-runner.mjs";
 import { summarizeReporterProfile, validateReporterProfile } from "./lib/reporter-profile.mjs";
 
 function assert(condition, message) {
@@ -272,10 +272,20 @@ async function main() {
     allowNetwork: true,
     readinessReport: readyReadinessReport,
   });
+  const taipeiPlanFixture = await runPlanFixture({
+    jurisdiction: "taipei",
+    packet: readyPacket,
+    plan: readyTaipeiPlan,
+  });
   assert(readyTaipeiPlan.status === "ready_until_email_verification", "Expected reviewed Taipei plan to be ready up to Email verification.");
   assert(readyTaipeiPlan.steps.some((item) => item.id === "review_pre_submit_summary" && item.requiresHuman), "Expected Taipei pre-submit review stop.");
   assert(!JSON.stringify(readyTaipeiPlan.steps.find((item) => item.id === "review_pre_submit_summary")).includes("A123456789"), "Taipei pre-submit review stop must not expose identity number.");
   assert(!JSON.stringify(readyTaipeiPlan.steps.find((item) => item.id === "review_pre_submit_summary")).includes("fixture@example.com"), "Taipei pre-submit review stop must not expose email value.");
+  assert(taipeiPlanFixture.status === "stopped_at_human_gate", "Expected Taipei plan fixture to stop at a human gate.");
+  assert(taipeiPlanFixture.stoppedAtStepId === "stop_before_email_verification", "Expected Taipei plan fixture to stop before Email verification.");
+  assert(taipeiPlanFixture.filledGroups.reporter > 0, "Expected Taipei plan fixture to prefill reporter fields before Email.");
+  assert(taipeiPlanFixture.filledGroups.case === 0, "Expected Taipei plan fixture not to fill case fields before Email.");
+  assert(taipeiPlanFixture.finalSubmitTriggered === false, "Expected Taipei plan fixture not to submit.");
   assert(taipeiPrototypeWithoutReadiness.status === "blocked_by_readiness_report", "Expected live Taipei prototype to require a readiness report.");
   assert(taipeiPrototypeWithStaleReadiness.status === "blocked_by_readiness_report", "Expected live Taipei prototype to reject missing official preflight readiness.");
   assert(taipeiPrototypeWithReadiness.status === "ready_for_guarded_browser", "Expected live Taipei prototype to pass with fresh readiness report.");
@@ -346,10 +356,19 @@ async function main() {
     allowNetwork: true,
     readinessReport: readyNewTaipeiReadinessReport,
   });
+  const newTaipeiPlanFixture = await runPlanFixture({
+    jurisdiction: "new_taipei",
+    packet: readyNewTaipeiPacket,
+    plan: readyNewTaipeiPlan,
+  });
   assert(readyNewTaipeiPacket.status === "ready_for_human_review", "Expected reviewed New Taipei packet to be ready.");
   assert(readyNewTaipeiReadinessReport.status === "ready_for_human_review", "Expected reviewed New Taipei readiness report to be ready.");
   assert(readyNewTaipeiPlan.status === "ready_until_captcha_email_verification", "Expected reviewed New Taipei plan to be ready up to CAPTCHA/Email verification.");
   assert(readyNewTaipeiPlan.steps.some((item) => item.id === "review_pre_submit_summary" && item.requiresHuman), "Expected reviewed New Taipei pre-submit review stop.");
+  assert(newTaipeiPlanFixture.status === "stopped_at_human_gate", "Expected New Taipei plan fixture to stop at a human gate.");
+  assert(newTaipeiPlanFixture.stoppedAtStepId === "stop_before_disclaimer", "Expected New Taipei plan fixture to stop before disclaimer confirmation.");
+  assert(newTaipeiPlanFixture.filledFieldCount === 0, "Expected New Taipei plan fixture not to prefill fields before disclaimer confirmation.");
+  assert(newTaipeiPlanFixture.finalSubmitTriggered === false, "Expected New Taipei plan fixture not to submit.");
   assert(newTaipeiPrototypeWithoutReadiness.status === "blocked_by_readiness_report", "Expected live New Taipei prototype to require a readiness report.");
   assert(newTaipeiPrototypeWithTaipeiReadiness.status === "blocked_by_readiness_report", "Expected live New Taipei prototype to reject Taipei readiness report.");
   assert(newTaipeiPrototypeWithTaipeiReadiness.readinessGate.issues.includes("readiness_report.jurisdiction_mismatch"), "Expected cross-jurisdiction readiness report mismatch issue.");
@@ -466,6 +485,8 @@ async function main() {
     taipeiDryRunManualStops: taipeiPlan.steps.filter((item) => item.requiresHuman).length,
     taipeiPrototypeStatus: taipeiPrototype.status,
     taipeiSelectorFieldCount: taipeiPrototype.selectorValidation.fieldCount,
+    taipeiPlanFixtureStatus: taipeiPlanFixture.status,
+    taipeiPlanFixtureStoppedAt: taipeiPlanFixture.stoppedAtStepId,
     taipeiFixtureFillStatus: taipeiFixtureFill.status,
     taipeiFixtureFilledFields: taipeiFixtureFill.filledFieldCount,
     taipeiFixtureUploadedAttachments: taipeiFixtureFill.uploadedAttachmentCount,
@@ -476,6 +497,8 @@ async function main() {
     newTaipeiPrototypeWithTaipeiReadinessStatus: newTaipeiPrototypeWithTaipeiReadiness.status,
     newTaipeiPrototypeWithReadinessStatus: newTaipeiPrototypeWithReadiness.status,
     newTaipeiSelectorFieldCount: newTaipeiSelectors.fieldCount,
+    newTaipeiPlanFixtureStatus: newTaipeiPlanFixture.status,
+    newTaipeiPlanFixtureStoppedAt: newTaipeiPlanFixture.stoppedAtStepId,
     newTaipeiFixtureFillStatus: newTaipeiFixtureFill.status,
     newTaipeiFixtureFilledFields: newTaipeiFixtureFill.filledFieldCount,
     newTaipeiFixtureUploadedAttachments: newTaipeiFixtureFill.uploadedAttachmentCount,
