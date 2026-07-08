@@ -52,6 +52,9 @@ const suggestionsState = document.querySelector("#suggestionsState");
 const caseRecordPanel = document.querySelector("#caseRecordPanel");
 const caseRecordList = document.querySelector("#caseRecordList");
 const caseRecordState = document.querySelector("#caseRecordState");
+const workflowPanel = document.querySelector("#workflowPanel");
+const workflowList = document.querySelector("#workflowList");
+const workflowState = document.querySelector("#workflowState");
 const readinessPanel = document.querySelector("#readinessPanel");
 const readinessList = document.querySelector("#readinessList");
 const readinessState = document.querySelector("#readinessState");
@@ -68,6 +71,7 @@ let importedFieldSuggestions = null;
 let importedLocationReview = null;
 let importedCaseRecordView = null;
 let importedReadinessView = null;
+let importedWorkflowView = null;
 
 function toTaiwanIsoString(datetimeLocalValue) {
   if (!datetimeLocalValue) return "";
@@ -255,17 +259,26 @@ function renderFiles() {
 function renderPreview() {
   const draft = createCaseDraft();
   const errors = validateDraft(draft);
-  const importedView = importedReadinessView || importedCaseRecordView;
+  const importedView = importedReadinessView || importedWorkflowView || importedCaseRecordView;
   jsonPreview.textContent = JSON.stringify(importedView || draft, null, 2);
   renderLocationAssistance(draft.locationAssistance);
   renderPhotoAnalysis(draft.photoAnalysis);
   renderFieldSuggestions(draft.fieldSuggestions);
+  renderWorkflowView(importedWorkflowView);
   renderCaseRecordView(importedCaseRecordView);
   renderReadinessView(importedReadinessView);
 
   if (importedReadinessView) {
     validationState.textContent = "送件檢查";
     validationState.className = importedReadinessView.canOpenOfficialSiteForHumanReview
+      ? "status-pill"
+      : "status-pill warning";
+    return;
+  }
+
+  if (importedWorkflowView) {
+    validationState.textContent = "流程檢查";
+    validationState.className = importedWorkflowView.draftValidation?.status === "ok"
       ? "status-pill"
       : "status-pill warning";
     return;
@@ -403,6 +416,9 @@ function formatRecordStatus(status) {
     ready_for_review: "待人工確認",
     submitted: "已送件",
     not_prepared: "尚未產生送件包",
+    ready_for_human_review: "可人工審核",
+    ready_until_email_verification: "可進行至 Email 認證前",
+    ready_until_captcha_email_verification: "可進行至驗證碼/Email 前",
     needs_missing_data: "缺少必要資料",
     needs_official_preflight: "需重跑官方檢查",
     blocked_by_missing_data: "缺少資料，已停止",
@@ -434,6 +450,16 @@ function isCaseReadinessReport(value) {
       value.missing &&
       Array.isArray(value.stopBefore) &&
       Object.prototype.hasOwnProperty.call(value, "canOpenOfficialSiteForHumanReview")
+  );
+}
+
+function isCaseWorkflowChecklist(value) {
+  return Boolean(
+    value &&
+      value.draftValidation &&
+      value.statuses &&
+      Array.isArray(value.artifacts) &&
+      Array.isArray(value.nextCommands)
   );
 }
 
@@ -546,6 +572,76 @@ function renderReadinessView(view) {
 
     stepsCard.append(stepsTitle, steps);
     readinessList.append(stepsCard);
+  }
+}
+
+function renderWorkflowView(view) {
+  workflowList.textContent = "";
+
+  if (!view) {
+    workflowPanel.hidden = true;
+    return;
+  }
+
+  workflowPanel.hidden = false;
+  const draftOk = view.draftValidation?.status === "ok";
+  workflowState.textContent = draftOk ? "可接續" : "需修正";
+  workflowState.className = draftOk ? "status-pill" : "status-pill warning";
+
+  const summary = document.createElement("article");
+  const title = document.createElement("div");
+  const details = document.createElement("div");
+
+  summary.className = "case-record-card";
+  title.className = "case-record-title";
+  title.textContent = view.caseId || "流程檢查";
+  details.className = "case-record-details";
+  details.append(
+    createDetail("縣市", formatJurisdiction(view.jurisdiction)),
+    createDetail("草稿驗證", view.draftValidation?.status || ""),
+    createDetail("送件包", formatRecordStatus(view.statuses?.submissionPacket)),
+    createDetail("送件檢查", formatRecordStatus(view.statuses?.readinessReport)),
+    createDetail("可開官方審核", view.statuses?.canOpenOfficialSiteForHumanReview ? "是" : "否"),
+    createDetail("案件紀錄", formatRecordStatus(view.statuses?.caseRecord)),
+    createDetail("自動化", formatRecordStatus(view.statuses?.automation))
+  );
+  summary.append(title, details);
+  workflowList.append(summary);
+
+  const artifacts = view.artifacts || [];
+  if (artifacts.length > 0) {
+    const artifactCard = document.createElement("article");
+    const artifactTitle = document.createElement("div");
+    const detailList = document.createElement("div");
+
+    artifactCard.className = "case-record-card";
+    artifactTitle.className = "case-record-title";
+    artifactTitle.textContent = "本機產物";
+    detailList.className = "case-record-details";
+    for (const artifact of artifacts) {
+      detailList.append(createDetail(artifact.title || artifact.id, artifact.status === "present" ? "已產生" : "缺少"));
+    }
+    artifactCard.append(artifactTitle, detailList);
+    workflowList.append(artifactCard);
+  }
+
+  const commands = view.nextCommands || [];
+  if (commands.length > 0) {
+    const commandCard = document.createElement("article");
+    const commandTitle = document.createElement("div");
+    const list = document.createElement("ol");
+
+    commandCard.className = "case-record-card";
+    commandTitle.className = "case-record-title";
+    commandTitle.textContent = "建議下一步";
+    list.className = "readiness-steps";
+    for (const command of commands) {
+      const item = document.createElement("li");
+      item.textContent = command;
+      list.append(item);
+    }
+    commandCard.append(commandTitle, list);
+    workflowList.append(commandCard);
   }
 }
 
@@ -764,6 +860,7 @@ function applyDraftToForm(draft) {
   importedFieldSuggestions = draft.fieldSuggestions || null;
   importedCaseRecordView = null;
   importedReadinessView = null;
+  importedWorkflowView = null;
   selectedFiles = [];
   fileInput.value = "";
   renderFiles();
@@ -780,6 +877,7 @@ function clearImportedDraftEvidence() {
 function importCaseRecordView(view) {
   importedCaseRecordView = view;
   importedReadinessView = null;
+  importedWorkflowView = null;
   clearImportedDraftEvidence();
   selectedFiles = [];
   fileInput.value = "";
@@ -789,6 +887,18 @@ function importCaseRecordView(view) {
 
 function importReadinessView(view) {
   importedReadinessView = view;
+  importedCaseRecordView = null;
+  importedWorkflowView = null;
+  clearImportedDraftEvidence();
+  selectedFiles = [];
+  fileInput.value = "";
+  renderFiles();
+  renderPreview();
+}
+
+function importWorkflowView(view) {
+  importedWorkflowView = view;
+  importedReadinessView = null;
   importedCaseRecordView = null;
   clearImportedDraftEvidence();
   selectedFiles = [];
@@ -805,6 +915,9 @@ async function importDraft(file) {
     if (isCaseReadinessReport(payload)) {
       importReadinessView(payload);
       saveState.textContent = "已匯入送件檢查";
+    } else if (isCaseWorkflowChecklist(payload)) {
+      importWorkflowView(payload);
+      saveState.textContent = "已匯入流程檢查";
     } else if (isCaseRecord(payload) || isCaseHistory(payload)) {
       importCaseRecordView(payload);
       saveState.textContent = isCaseHistory(payload) ? "已匯入案件歷史" : "已匯入案件紀錄";
@@ -852,6 +965,7 @@ function resetDraft() {
   importedFieldSuggestions = null;
   importedCaseRecordView = null;
   importedReadinessView = null;
+  importedWorkflowView = null;
   fileInput.value = "";
   localStorage.removeItem(STORAGE_KEY);
   renderFiles();
@@ -868,6 +982,7 @@ fileInput.addEventListener("change", () => {
   importedFieldSuggestions = null;
   importedCaseRecordView = null;
   importedReadinessView = null;
+  importedWorkflowView = null;
   renderFiles();
   handleInputChange();
 });

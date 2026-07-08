@@ -27,6 +27,14 @@ async function importReadinessJson(page, path) {
   });
 }
 
+async function importWorkflowJson(page, path) {
+  await page.locator("#importInput").setInputFiles(path);
+  await page.waitForFunction(() => {
+    const panel = document.querySelector("#workflowPanel");
+    return panel && panel.hidden === false;
+  });
+}
+
 async function importDraftJson(page, path, expectedText = "locationAssistance") {
   await page.locator("#importInput").setInputFiles(path);
   await page.waitForFunction((text) => {
@@ -45,6 +53,7 @@ async function main() {
   const recordPath = join(fixtureDir, "case-record.json");
   const historyPath = join(fixtureDir, "case-history.json");
   const readinessPath = join(fixtureDir, "case-readiness-report.json");
+  const workflowPath = join(fixtureDir, "case-workflow-checklist.json");
   const draftPath = join(fixtureDir, "draft-with-location.json");
   const confirmedLocationDraftPath = join(fixtureDir, "draft-with-confirmed-location.json");
   const caseRecord = {
@@ -147,6 +156,47 @@ async function main() {
       "Complete CAPTCHA, Email verification, declarations, pre-submit review, and final submit manually.",
     ],
   };
+  const workflowChecklist = {
+    generatedAt: "2026-07-09T00:00:00.000Z",
+    caseDirectory: "cases/case-ui-fixture",
+    caseId: "case-ui-fixture",
+    jurisdiction: "taipei",
+    draftValidation: {
+      status: "ok",
+      issues: [],
+    },
+    statuses: {
+      submissionPacket: "ready_for_human_review",
+      readinessReport: "ready_for_human_review",
+      canOpenOfficialSiteForHumanReview: true,
+      caseRecord: "submitted_by_user",
+      automation: "ready_until_email_verification",
+    },
+    artifacts: [
+      {
+        id: "draft",
+        title: "Case draft",
+        file: "draft.json",
+        status: "present",
+      },
+      {
+        id: "readiness_report",
+        title: "Readiness report",
+        file: "case-readiness-report.json",
+        status: "present",
+      },
+      {
+        id: "case_record_summary",
+        title: "Case record summary",
+        file: "case-record-summary.md",
+        status: "missing",
+      },
+    ],
+    nextCommands: [
+      "npm run taipei:prototype -- cases/case-ui-fixture/taipei-automation-plan.json --readiness-report cases/case-ui-fixture/case-readiness-report.json --allow-network",
+      "npm run export:case-record -- cases/case-ui-fixture/case-record.json",
+    ],
+  };
   const draftWithLocation = {
     jurisdiction: "taipei",
     violationType: "illegal_parking",
@@ -229,6 +279,7 @@ async function main() {
   await writeFile(recordPath, `${JSON.stringify(caseRecord, null, 2)}\n`);
   await writeFile(historyPath, `${JSON.stringify(caseHistory, null, 2)}\n`);
   await writeFile(readinessPath, `${JSON.stringify(readinessReport, null, 2)}\n`);
+  await writeFile(workflowPath, `${JSON.stringify(workflowChecklist, null, 2)}\n`);
   await writeFile(draftPath, `${JSON.stringify(draftWithLocation, null, 2)}\n`);
   await writeFile(confirmedLocationDraftPath, `${JSON.stringify(draftWithConfirmedLocation, null, 2)}\n`);
 
@@ -254,6 +305,14 @@ async function main() {
     assert(readinessText.includes("case.plate"), "Expected readiness missing case field to render.");
     assert(readinessText.includes("final_submit"), "Expected readiness human stop to render.");
 
+    await importWorkflowJson(page, workflowPath);
+    const workflowText = await visibleText(page, "#workflowPanel");
+    assert(workflowText.includes("case-ui-fixture"), "Expected workflow checklist case id to render.");
+    assert(workflowText.includes("可接續"), "Expected workflow checklist state to render.");
+    assert(workflowText.includes("Case record summary"), "Expected workflow artifact to render.");
+    assert(workflowText.includes("缺少"), "Expected missing workflow artifact status to render.");
+    assert(workflowText.includes("taipei:prototype"), "Expected workflow next command to render.");
+
     await importDraftJson(page, draftPath, "25.022475");
     await page.getByRole("button", { name: "採用候選" }).click();
     const draft = await page.evaluate(() => window.taiwanBestView.currentDraft());
@@ -276,7 +335,7 @@ async function main() {
 
   console.log(JSON.stringify({
     ok: true,
-    verified: ["case-record import", "case-history import", "case-readiness import", "location candidate confirmation", "confirmed location candidate confirmation"],
+    verified: ["case-record import", "case-history import", "case-readiness import", "case-workflow import", "location candidate confirmation", "confirmed location candidate confirmation"],
   }, null, 2));
 }
 

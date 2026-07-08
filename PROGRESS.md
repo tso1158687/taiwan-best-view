@@ -38,7 +38,7 @@ The project is published as a public GitHub repository:
 - Read-only live official-site preflight scripts.
 - Local Playwright fixture fill verification without contacting official websites.
 - Local case record creation, update, and case-history summary.
-- Browser UI import for `case-readiness-report.json`, `case-record.json`, and `case-history.json`.
+- Browser UI import for `case-readiness-report.json`, `case-workflow-checklist.json`, `case-record.json`, and `case-history.json`.
 - Metadata tooling diagnostics for QuickLook and optional exiftool embedding.
 - Public handoff documentation in `README.md` and detailed audit notes in `SELF_AUDIT.md`.
 
@@ -58,7 +58,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T165030`
+- `cases/case-20260708T165501`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -74,6 +74,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - UI fixture verification: `ok`
 - Case draft validation verification: `ok`, generated drafts pass and invalid fixture drafts fail with specific issues.
 - Case workflow checklist verification: `ok`, artifact status and next-command hints generated from local case folders.
+- Case workflow checklist UI import verification: `ok`
 - Case readiness report UI import verification: `ok`
 - Location candidate confirmation UI verification: `ok`
 - Confirmed frequent-location candidate verification: `ok`
