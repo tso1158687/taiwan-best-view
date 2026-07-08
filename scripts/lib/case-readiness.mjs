@@ -137,12 +137,23 @@ function summarizeLocationReadiness(draft) {
 
 function summarizePhotoAnalysisReadiness(draft) {
   const analysis = draft.photoAnalysis || {};
+  const fieldReview = draft.fieldReview || {};
   const plateCandidates = analysis.plateCandidates || [];
   const locationTextCandidates = analysis.locationTextCandidates || [];
   const topPlateCandidate = plateCandidates[0] || null;
+  const confirmedFields = Object.entries(fieldReview)
+    .filter(([, review]) => review?.status === "confirmed_by_user")
+    .map(([field, review]) => ({
+      field,
+      value: review.value || "",
+      source: review.source || "",
+      confirmedAt: review.confirmedAt || "",
+    }));
 
   return {
-    status: plateCandidates.length > 0 || locationTextCandidates.length > 0 ? "needs_user_confirmation" : "manual_required",
+    status: confirmedFields.length > 0
+      ? "candidate_confirmed_by_user"
+      : plateCandidates.length > 0 || locationTextCandidates.length > 0 ? "needs_user_confirmation" : "manual_required",
     engine: analysis.engine || "",
     plateCandidateCount: plateCandidates.length,
     topPlateCandidate: topPlateCandidate
@@ -154,6 +165,7 @@ function summarizePhotoAnalysisReadiness(draft) {
         }
       : null,
     locationTextCandidateCount: locationTextCandidates.length,
+    confirmedFields,
   };
 }
 

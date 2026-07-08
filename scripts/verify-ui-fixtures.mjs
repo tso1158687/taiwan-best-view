@@ -251,8 +251,35 @@ async function main() {
         },
       ],
     },
-    photoAnalysis: null,
-    fieldSuggestions: { status: "empty", plate: [], district: [], road: [], addressNote: [] },
+    photoAnalysis: {
+      status: "ok",
+      engine: "fixture",
+      plateCandidates: [
+        {
+          text: "3999-YG",
+          confidence: 0.92,
+          pattern: "four_digits_two_letters",
+          requiresReview: true,
+        },
+      ],
+      locationTextCandidates: [{ text: "傳品牛排", confidence: 0.7 }],
+    },
+    fieldSuggestions: {
+      status: "needs_review",
+      plate: [
+        {
+          field: "plate",
+          value: "3999-YG",
+          source: "ocr_plate",
+          confidence: 0.92,
+          evidence: "fixture OCR plate candidate",
+          requiresReview: true,
+        },
+      ],
+      district: [],
+      road: [],
+      addressNote: [],
+    },
     status: "draft",
   };
   const draftWithConfirmedLocation = {
@@ -341,6 +368,11 @@ async function main() {
     assert(draft.addressNote.includes("GPS 反查 新北市新莊區中正路"), "Expected selected location candidate to fill address note.");
     assert(draft.locationReview?.status === "confirmed_by_user", "Expected selected location candidate to create locationReview.");
     assert(draft.locationReview?.candidateLabel === "25.022475, 121.426317", "Expected selected location candidate label to be recorded.");
+    await page.getByRole("button", { name: /3999-YG/ }).evaluate((button) => button.click());
+    const fieldReviewDraft = await page.evaluate(() => window.taiwanBestView.currentDraft());
+    assert(fieldReviewDraft.plate === "3999-YG", "Expected selected plate suggestion to fill plate.");
+    assert(fieldReviewDraft.fieldReview?.plate?.status === "confirmed_by_user", "Expected selected plate suggestion to create fieldReview.");
+    assert(fieldReviewDraft.fieldReview?.plate?.source === "ocr_plate", "Expected fieldReview to preserve suggestion source.");
 
     await importDraftJson(page, confirmedLocationDraftPath, "fixture-confirmed-location");
     await page.getByRole("button", { name: "採用候選" }).click();
@@ -355,7 +387,7 @@ async function main() {
 
   console.log(JSON.stringify({
     ok: true,
-    verified: ["case-record import", "case-history import", "case-readiness import", "case-workflow import", "location candidate confirmation", "confirmed location candidate confirmation"],
+    verified: ["case-record import", "case-history import", "case-readiness import", "case-workflow import", "location candidate confirmation", "field suggestion confirmation", "confirmed location candidate confirmation"],
   }, null, 2));
 }
 

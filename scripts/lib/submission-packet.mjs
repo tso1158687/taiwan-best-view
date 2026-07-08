@@ -109,6 +109,7 @@ function createBasePacket({ draft, reporterProfile, attachments }) {
       fact: draft.fact,
       description: draft.description,
       fieldSuggestions: draft.fieldSuggestions || null,
+      fieldReview: draft.fieldReview || {},
       locationAssistance: draft.locationAssistance || null,
       photoAnalysis: draft.photoAnalysis
         ? {

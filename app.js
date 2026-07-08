@@ -68,6 +68,7 @@ let importedAttachments = [];
 let importedLocationAssistance = null;
 let importedPhotoAnalysis = null;
 let importedFieldSuggestions = null;
+let importedFieldReview = {};
 let importedLocationReview = null;
 let importedCaseRecordView = null;
 let importedReadinessView = null;
@@ -148,6 +149,7 @@ function createCaseDraft() {
     locationReview: selectedFiles.length > 0 ? null : importedLocationReview,
     photoAnalysis: selectedFiles.length > 0 ? null : importedPhotoAnalysis,
     fieldSuggestions: selectedFiles.length > 0 ? null : importedFieldSuggestions,
+    fieldReview: selectedFiles.length > 0 ? {} : importedFieldReview,
     status: data.get("status"),
     updatedAt: new Date().toISOString(),
   };
@@ -309,7 +311,7 @@ function suggestionLabel(field) {
   return field;
 }
 
-function applySuggestion(field, value) {
+function applySuggestion(field, value, suggestion = null) {
   const target = form.elements[field];
   if (!target) return;
 
@@ -317,6 +319,21 @@ function applySuggestion(field, value) {
     target.value = `${target.value.trim()}；${value}`;
   } else {
     target.value = value;
+  }
+
+  if (suggestion) {
+    importedFieldReview = {
+      ...importedFieldReview,
+      [field]: {
+        status: "confirmed_by_user",
+        confirmedAt: new Date().toISOString(),
+        value: target.value,
+        source: suggestion.source || "field_suggestion",
+        confidence: suggestion.confidence ?? null,
+        evidence: suggestion.evidence || "",
+        requiresReview: suggestion.requiresReview === true,
+      },
+    };
   }
 
   handleInputChange();
@@ -395,7 +412,7 @@ function renderFieldSuggestions(fieldSuggestions) {
       button.type = "button";
       button.className = "suggestion-action";
       button.textContent = `${suggestion.value} (${Math.round((suggestion.confidence || 0) * 100)}%)`;
-      button.addEventListener("click", () => applySuggestion(field, suggestion.value));
+      button.addEventListener("click", () => applySuggestion(field, suggestion.value, suggestion));
       actions.append(button);
     }
 
@@ -883,6 +900,7 @@ function applyDraftToForm(draft) {
   importedLocationReview = draft.locationReview || null;
   importedPhotoAnalysis = draft.photoAnalysis || null;
   importedFieldSuggestions = draft.fieldSuggestions || null;
+  importedFieldReview = draft.fieldReview || {};
   importedCaseRecordView = null;
   importedReadinessView = null;
   importedWorkflowView = null;
@@ -897,6 +915,7 @@ function clearImportedDraftEvidence() {
   importedLocationReview = null;
   importedPhotoAnalysis = null;
   importedFieldSuggestions = null;
+  importedFieldReview = {};
 }
 
 function importCaseRecordView(view) {
@@ -988,6 +1007,7 @@ function resetDraft() {
   importedLocationReview = null;
   importedPhotoAnalysis = null;
   importedFieldSuggestions = null;
+  importedFieldReview = {};
   importedCaseRecordView = null;
   importedReadinessView = null;
   importedWorkflowView = null;
@@ -1005,6 +1025,7 @@ fileInput.addEventListener("change", () => {
   importedLocationReview = null;
   importedPhotoAnalysis = null;
   importedFieldSuggestions = null;
+  importedFieldReview = {};
   importedCaseRecordView = null;
   importedReadinessView = null;
   importedWorkflowView = null;

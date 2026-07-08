@@ -152,6 +152,17 @@ async function main() {
     district: "新莊區",
     road: "中正路",
     addressNote: "傳品牛排附近，實際位置仍需人工確認",
+    fieldReview: {
+      plate: {
+        status: "confirmed_by_user",
+        confirmedAt: "2026-07-09T08:30:00.000Z",
+        value: "ABC-1234",
+        source: "manual_review",
+        confidence: null,
+        evidence: "fixture reviewed plate",
+        requiresReview: true,
+      },
+    },
   };
   const readyPacket = await createSubmissionPacket({ draft: reviewedDraft, reporterProfile });
   const noPreflightReadinessReport = await createCaseReadinessReport({
@@ -176,6 +187,7 @@ async function main() {
   assert(readyReadinessReport.canOpenOfficialSiteForHumanReview === true, "Expected readiness gate to allow official-site opening only for human review.");
   assert(readyReadinessReport.finalSubmitAutomated === false, "Expected readiness gate to keep final submit manual.");
   assert(readyReadinessReport.officialPreflight.status === "ok", "Expected readiness gate to include fresh official preflight.");
+  assert(readyReadinessReport.reviewItems.some((item) => item.id === "photo_analysis" && item.status === "candidate_confirmed_by_user"), "Expected field review to confirm photo analysis candidate.");
   const readyTaipeiPlan = createTaipeiAutomationPlan(readyPacket);
   const taipeiPrototypeWithoutReadiness = await createPrototypeRun({
     plan: readyTaipeiPlan,
@@ -357,6 +369,7 @@ async function main() {
     reviewedCaseReadinessStatus: readyReadinessReport.status,
     reviewedCaseReadinessCanOpenOfficialSite: readyReadinessReport.canOpenOfficialSiteForHumanReview,
     reviewedCaseReadinessOfficialPreflightStatus: readyReadinessReport.officialPreflight.status,
+    reviewedFieldReviewStatus: readyReadinessReport.reviewItems.find((item) => item.id === "photo_analysis")?.status,
     taipeiPrototypeWithoutReadinessStatus: taipeiPrototypeWithoutReadiness.status,
     taipeiPrototypeWithReadinessStatus: taipeiPrototypeWithReadiness.status,
     reporterProfileSummaryStatus: reporterSummary.status,

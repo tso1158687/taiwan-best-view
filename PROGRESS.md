@@ -28,6 +28,7 @@ The project is published as a public GitHub repository:
 - Apple Vision OCR for plate candidates and location text clues.
 - OCR plate normalization, confidence scoring, confidence reasons, and official form splitting.
 - Field suggestions for plate, district, road, and address note.
+- Browser UI field suggestion adoption recorded as `fieldReview` for later readiness review.
 - Submission packet generation for Taipei and New Taipei.
 - Real-case readiness reports that gate official-site opening on complete local case and reporter data.
 - Official preflight freshness gate in readiness reports and checklists.
@@ -58,7 +59,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T171117`
+- `cases/case-20260708T171713`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -78,12 +79,14 @@ Important observed results from the real `test-files/` HEIC photos:
 - Case workflow checklist UI import verification: `ok`
 - Case readiness report UI import verification: `ok`
 - Location candidate confirmation UI verification: `ok`
+- Field suggestion confirmation UI verification: `ok`, adopted plate suggestion recorded in `fieldReview`.
 - Confirmed frequent-location candidate verification: `ok`
 - Reporter-profile fixture status: `ready`
 - Encrypted reporter-profile fixture verification: `ok`, encrypted envelope does not contain fixture identity number or email plaintext.
 - Reviewed packet status with complete fixture-only case and reporter fields: `ready_for_human_review`
 - Case readiness gate with incomplete real-case fields: `needs_missing_data`, official-site opening blocked.
 - Case readiness gate with complete fixture-only case, reporter fields, and fresh official preflight: `ready_for_human_review`, official-site opening allowed for human review only.
+- Field review readiness verification: `candidate_confirmed_by_user`, adopted OCR/field suggestions are recorded for review.
 - Case readiness gate with complete local data but missing/stale official preflight: `needs_official_preflight`.
 - Guarded prototype gate with complete local data but missing readiness report: `blocked_by_readiness_report`.
 - Guarded prototype gate with complete local data and ready readiness report: `ready_for_guarded_browser`.

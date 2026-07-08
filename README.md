@@ -11,6 +11,7 @@ Taiwan Best View is a local-first helper for preparing Taiwan traffic violation 
 - Normalizes OCR plate candidates into official-form-friendly plate parts with confidence reasons.
 - Attempts macOS CoreLocation reverse geocoding for GPS candidates when available.
 - Lets the user manually adopt a GPS/map candidate into the draft as `locationReview`.
+- Records manually adopted OCR/field suggestions in the draft as `fieldReview`.
 - Records and reuses local confirmed frequent locations as review-only location candidates.
 - Builds submission packets for Taipei and New Taipei.
 - Reviews case readiness before opening official websites for human-reviewed submission.

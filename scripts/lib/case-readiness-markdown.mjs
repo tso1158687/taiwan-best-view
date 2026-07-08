@@ -28,6 +28,13 @@ function reviewItemSummary(item) {
   if (typeof item.candidateCount === "number") {
     lines.push("", `Candidate count: ${item.candidateCount}`);
   }
+  if (Array.isArray(item.confirmedFields) && item.confirmedFields.length > 0) {
+    lines.push(
+      "",
+      "Confirmed fields:",
+      list(item.confirmedFields.map((field) => `${field.field}: ${field.value || "-"} (${field.source || "unknown"})`))
+    );
+  }
   if (item.note) {
     lines.push("", item.note);
   }

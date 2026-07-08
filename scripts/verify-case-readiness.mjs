@@ -136,6 +136,17 @@ async function main() {
     district: "新莊區",
     road: "中正路",
     addressNote: "傳品牛排附近，實際位置仍需人工確認",
+    fieldReview: {
+      plate: {
+        status: "confirmed_by_user",
+        confirmedAt: "2026-07-09T08:30:00.000Z",
+        value: "3999-YG",
+        source: "ocr_plate",
+        confidence: 0.92,
+        evidence: "fixture OCR plate candidate",
+        requiresReview: true,
+      },
+    },
     locationReview: {
       source: "exif_gps",
       label: "25.022475, 121.426317",
@@ -175,6 +186,8 @@ async function main() {
   assert(readyReport.finalSubmitAutomated === false, "Expected final submit to remain manual.");
   assert(readyReport.reporterProfile.status === "ready", "Expected reporter profile summary to be ready.");
   assert(readyReport.officialPreflight.status === "ok", "Expected fresh official preflight to be ok.");
+  assert(readyReport.reviewItems.some((item) => item.id === "photo_analysis" && item.status === "candidate_confirmed_by_user"), "Expected confirmed field review to update photo analysis readiness.");
+  assert(readyMarkdown.includes("plate: 3999-YG"), "Expected markdown checklist to include confirmed field review.");
   assert(!JSON.stringify(readyReport.reporterProfile).includes("A123456789"), "Reporter summary must not expose identity number.");
   assert(readyReport.reviewItems.some((item) => item.id === "official_human_stops" && item.status === "human_required"), "Expected human stop review item.");
   assert(readyMarkdown.includes("# Case Readiness Checklist"), "Expected markdown checklist title.");
@@ -191,7 +204,7 @@ async function main() {
     stalePreflightStatus: stalePreflightReport.status,
     canOpenOfficialSiteForHumanReview: readyReport.canOpenOfficialSiteForHumanReview,
     finalSubmitAutomated: readyReport.finalSubmitAutomated,
-    verified: ["missing data gate", "reporter privacy summary", "encrypted reporter profile", "human official-site stop boundary", "official preflight freshness gate", "markdown checklist"],
+    verified: ["missing data gate", "reporter privacy summary", "encrypted reporter profile", "field review confirmation", "human official-site stop boundary", "official preflight freshness gate", "markdown checklist"],
   }, null, 2));
 }
 

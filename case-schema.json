@@ -404,6 +404,23 @@
         }
       }
     },
+    "fieldReview": {
+      "type": "object",
+      "properties": {
+        "plate": {
+          "$ref": "#/$defs/fieldReview"
+        },
+        "district": {
+          "$ref": "#/$defs/fieldReview"
+        },
+        "road": {
+          "$ref": "#/$defs/fieldReview"
+        },
+        "addressNote": {
+          "$ref": "#/$defs/fieldReview"
+        }
+      }
+    },
     "status": {
       "type": "string",
       "enum": ["draft", "ready_for_review", "submitted"]
@@ -433,6 +450,33 @@
         },
         "maps": {
           "type": "object"
+        },
+        "requiresReview": {
+          "type": "boolean"
+        }
+      }
+    },
+    "fieldReview": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["confirmed_by_user"]
+        },
+        "confirmedAt": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": ["number", "null"]
+        },
+        "evidence": {
+          "type": "string"
         },
         "requiresReview": {
           "type": "boolean"
