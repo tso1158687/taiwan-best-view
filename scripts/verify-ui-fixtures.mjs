@@ -209,6 +209,12 @@ async function main() {
         file: "case-record-summary.md",
         status: "missing",
       },
+      {
+        id: "plan_fixture_report",
+        title: "Taipei plan fixture report",
+        file: "taipei-plan-fixture-report.json",
+        status: "present",
+      },
     ],
     nextAction: {
       id: "open_guarded_browser",
@@ -218,6 +224,7 @@ async function main() {
       requiresHuman: true,
     },
     nextCommands: [
+      "npm run fixture:plan -- cases/case-ui-fixture/submission-packet.json cases/case-ui-fixture/taipei-automation-plan.json",
       "npm run taipei:prototype -- cases/case-ui-fixture/taipei-automation-plan.json --readiness-report cases/case-ui-fixture/case-readiness-report.json --allow-network",
       "npm run export:case-record -- cases/case-ui-fixture/case-record.json",
     ],
@@ -407,9 +414,11 @@ async function main() {
     assert(workflowText.includes("case-ui-fixture"), "Expected workflow checklist case id to render.");
     assert(workflowText.includes("可接續"), "Expected workflow checklist state to render.");
     assert(workflowText.includes("Case record summary"), "Expected workflow artifact to render.");
+    assert(workflowText.includes("Taipei plan fixture report"), "Expected plan fixture artifact to render.");
     assert(workflowText.includes("缺少"), "Expected missing workflow artifact status to render.");
     assert(workflowText.includes("推薦下一步"), "Expected workflow next action section to render.");
     assert(workflowText.includes("Open the guarded browser flow"), "Expected workflow next action title to render.");
+    assert(workflowText.includes("fixture:plan"), "Expected workflow plan fixture command to render.");
     assert(workflowText.includes("taipei:prototype"), "Expected workflow next command to render.");
 
     await importDraftJson(page, draftPath, "25.022475");

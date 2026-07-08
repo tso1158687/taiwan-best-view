@@ -148,6 +148,7 @@ npm run fixture:plan -- cases/<case-id>/submission-packet.json cases/<case-id>/t
 ```
 
 `fixture:plan` follows the guarded automation plan against a local official-like page and stops at the first human gate. It does not contact official websites, click verification controls, or submit forms.
+The workflow checklist treats the generated plan fixture report as a required safety artifact before recommending guarded official-site handoff.
 
 Write and update case records:
 

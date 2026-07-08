@@ -416,6 +416,10 @@ async function main() {
   });
   const preservedCorrectionSummary = summarizeCaseRecord(recordAfterCaseNumberUpdate, report.caseDirectory);
   await writeFile(join(report.caseDirectory, "case-record.json"), `${JSON.stringify(submittedRecord, null, 2)}\n`);
+  const needsPlanFixtureWorkflowChecklist = await createCaseWorkflowChecklist({ caseDirectory: report.caseDirectory });
+  assert(needsPlanFixtureWorkflowChecklist.nextAction.id === "verify_guarded_plan_fixture", "Expected workflow checklist to require the plan fixture before official-site handoff.");
+  assert(needsPlanFixtureWorkflowChecklist.nextAction.command.includes("fixture:plan"), "Expected workflow checklist plan-fixture command.");
+  await writeFile(join(report.caseDirectory, "taipei-plan-fixture-report.json"), `${JSON.stringify(taipeiPlanFixture, null, 2)}\n`);
   await writeFile(join(report.caseDirectory, "case-record-summary.md"), caseRecordMarkdown);
   const completeWorkflowChecklist = await createCaseWorkflowChecklist({ caseDirectory: report.caseDirectory });
   assert(caseSummary.officialCaseNumber === "TP-FIXTURE-0001", "Expected case summary to include official case number.");
@@ -434,8 +438,10 @@ async function main() {
   assert(completeWorkflowChecklist.statuses.submissionPacket === "ready_for_human_review", "Expected workflow checklist to read ready submission packet.");
   assert(completeWorkflowChecklist.statuses.readinessReport === "ready_for_human_review", "Expected workflow checklist to read ready readiness report.");
   assert(completeWorkflowChecklist.statuses.caseRecord === "submitted_by_user", "Expected workflow checklist to read submitted case record.");
+  assert(completeWorkflowChecklist.statuses.planFixture === "present", "Expected workflow checklist to require the plan fixture report.");
   assert(completeWorkflowChecklist.artifacts.every((artifact) => artifact.status === "present"), "Expected workflow checklist fixture to have all local artifacts.");
   assert(completeWorkflowChecklist.nextAction.id === "workflow_complete", "Expected workflow checklist to report local workflow completion.");
+  assert(completeWorkflowChecklist.nextCommands.some((command) => command.includes("fixture:plan")), "Expected workflow checklist to include plan fixture command.");
   assert(completeWorkflowChecklist.nextCommands.some((command) => command.includes("taipei:prototype")), "Expected workflow checklist to include guarded prototype command.");
   const uiVerification = await run("npm", ["run", "verify:ui"]);
   assert(uiVerification.stdout.includes("\"ok\": true"), "Expected UI fixture verification to pass.");
@@ -510,6 +516,7 @@ async function main() {
     caseCorrectionItemCount: caseSummary.correctionItemCount,
     caseRecordMarkdownVerification: "ok",
     workflowChecklistVerification: completeWorkflowChecklist.statuses.caseRecord,
+    workflowPlanFixtureStatus: completeWorkflowChecklist.statuses.planFixture,
     workflowNextAction: completeWorkflowChecklist.nextAction.id,
     uiFixtureVerification: "ok",
   }, null, 2));

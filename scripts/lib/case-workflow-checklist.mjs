@@ -42,6 +42,21 @@ function automationPlanArtifact(jurisdiction) {
   };
 }
 
+function planFixtureArtifact(jurisdiction) {
+  if (jurisdiction === "new_taipei") {
+    return {
+      id: "plan_fixture_report",
+      file: "new-taipei-plan-fixture-report.json",
+      title: "New Taipei plan fixture report",
+    };
+  }
+  return {
+    id: "plan_fixture_report",
+    file: "taipei-plan-fixture-report.json",
+    title: "Taipei plan fixture report",
+  };
+}
+
 function statusOrMissing(value) {
   return value || "missing";
 }
@@ -75,6 +90,7 @@ function commandHints({ caseDirectory, jurisdiction, artifacts }) {
   if (has("automation_plan") && has("readiness_report")) {
     const planFile = jurisdiction === "new_taipei" ? "new-taipei-automation-plan.json" : "taipei-automation-plan.json";
     const script = jurisdiction === "new_taipei" ? "new-taipei:prototype" : "taipei:prototype";
+    commands.push(planFixtureCommand({ caseDirectory, jurisdiction }));
     commands.push(`npm run ${script} -- ${caseDirectory}/${planFile} --readiness-report ${readinessPath} --allow-network`);
   }
   if (!has("case_record") && has("submission_packet")) {
@@ -96,6 +112,11 @@ function prototypeCommand({ caseDirectory, jurisdiction }) {
   const planFile = jurisdiction === "new_taipei" ? "new-taipei-automation-plan.json" : "taipei-automation-plan.json";
   const script = jurisdiction === "new_taipei" ? "new-taipei:prototype" : "taipei:prototype";
   return `npm run ${script} -- ${caseDirectory}/${planFile} --readiness-report ${caseDirectory}/case-readiness-report.json --allow-network`;
+}
+
+function planFixtureCommand({ caseDirectory, jurisdiction }) {
+  const planFile = jurisdiction === "new_taipei" ? "new-taipei-automation-plan.json" : "taipei-automation-plan.json";
+  return `npm run fixture:plan -- ${caseDirectory}/submission-packet.json ${caseDirectory}/${planFile}`;
 }
 
 function dryRunCommand({ caseDirectory, jurisdiction }) {
@@ -202,6 +223,16 @@ function recommendedNextAction({ caseDirectory, jurisdiction, artifacts, draftVa
     };
   }
 
+  if (!has("plan_fixture_report")) {
+    return {
+      id: "verify_guarded_plan_fixture",
+      title: "Verify the guarded plan locally",
+      reason: "Before opening the official website, run the guarded automation plan against the local official-like fixture and confirm it stops at the first human gate.",
+      command: planFixtureCommand({ caseDirectory, jurisdiction }),
+      requiresHuman: false,
+    };
+  }
+
   if (record?.submissionStatus !== "submitted_by_user" && readiness?.canOpenOfficialSiteForHumanReview === true) {
     return {
       id: "open_guarded_browser",
@@ -247,7 +278,7 @@ export async function createCaseWorkflowChecklist({ caseDirectory }) {
   const jurisdiction = draft?.jurisdiction || "taipei";
   const artifacts = [];
 
-  for (const artifact of [...ARTIFACTS, automationPlanArtifact(jurisdiction)]) {
+  for (const artifact of [...ARTIFACTS, automationPlanArtifact(jurisdiction), planFixtureArtifact(jurisdiction)]) {
     artifacts.push(await artifactStatus(caseDirectory, artifact));
   }
 
@@ -270,6 +301,7 @@ export async function createCaseWorkflowChecklist({ caseDirectory }) {
       canOpenOfficialSiteForHumanReview: readiness?.canOpenOfficialSiteForHumanReview === true,
       caseRecord: statusOrMissing(record?.submissionStatus),
       automation: statusOrMissing(record?.automationStatus),
+      planFixture: artifacts.find((artifact) => artifact.id === "plan_fixture_report")?.status || "missing",
     },
     artifacts,
     nextAction: recommendedNextAction({ caseDirectory, jurisdiction, artifacts, draftValidation, packet, readiness, record }),
@@ -290,6 +322,7 @@ export function formatCaseWorkflowChecklistMarkdown(checklist) {
     `- Can open official site for human review: ${checklist.statuses.canOpenOfficialSiteForHumanReview ? "yes" : "no"}`,
     `- Case record: ${checklist.statuses.caseRecord}`,
     `- Automation: ${checklist.statuses.automation}`,
+    `- Plan fixture: ${checklist.statuses.planFixture}`,
     "",
     "## Artifacts",
     "",
