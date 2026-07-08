@@ -30,6 +30,7 @@ The project is published as a public GitHub repository:
 - Field suggestions for plate, district, road, and address note.
 - Submission packet generation for Taipei and New Taipei.
 - Real-case readiness reports that gate official-site opening on complete local case and reporter data.
+- Official preflight freshness gate in readiness reports and checklists.
 - Human-readable readiness Markdown checklists that omit reporter-profile values.
 - Local reporter profile validation and submission-packet integration.
 - Guarded automation plans that stop before CAPTCHA, Email verification, declarations, and final submit.
@@ -57,7 +58,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T162304`
+- `cases/case-20260708T162812`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -77,7 +78,8 @@ Important observed results from the real `test-files/` HEIC photos:
 - Reporter-profile fixture status: `ready`
 - Reviewed packet status with complete fixture-only case and reporter fields: `ready_for_human_review`
 - Case readiness gate with incomplete real-case fields: `needs_missing_data`, official-site opening blocked.
-- Case readiness gate with complete fixture-only case and reporter fields: `ready_for_human_review`, official-site opening allowed for human review only.
+- Case readiness gate with complete fixture-only case, reporter fields, and fresh official preflight: `ready_for_human_review`, official-site opening allowed for human review only.
+- Case readiness gate with complete local data but missing/stale official preflight: `needs_official_preflight`.
 - Case readiness Markdown checklist verification: `ok`, reporter-profile values omitted.
 - Metadata embedding statuses on this machine: `sidecar_only`, `sidecar_only`
 - Latest Taipei official preflight: `ok`, 6 present selectors, 3 deferred selectors, 0 missing selectors.
@@ -99,7 +101,7 @@ Important observed results from the real `test-files/` HEIC photos:
 
 1. For a real case, fill missing case fields and reporter profile, then run guarded dry-run/prototype commands before manually completing official verification and final submit.
 2. Keep re-running read-only official preflights before real assisted submission because official sites can change selectors.
-3. Run `npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.json` before any live official-site run.
+3. Run `npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.json --official-preflight cases/<jurisdiction>-live-preflight.json` before any live official-site run.
 4. After manually confirming a location, run `npm run record:location -- cases/<case-id>/draft.json` so later cases can reuse it as a review-only candidate.
 
 ## Resume Checklist

@@ -84,10 +84,10 @@ Review whether a case is ready to open on the official website:
 ```sh
 npm run review:case -- cases/<case-id>/draft.json
 npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.json
-npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.json --markdown cases/<case-id>/case-readiness-checklist.md
+npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.json --official-preflight cases/taipei-live-preflight.json --markdown cases/<case-id>/case-readiness-checklist.md
 ```
 
-This writes `case-readiness-report.json` and `case-readiness-checklist.md` next to the draft by default. They report missing case fields, reporter-profile readiness, attachment and metadata review notes, official human stop points, and the next safe commands. They do not contact official websites. The checklist intentionally omits reporter-profile values; you can import the JSON report with the browser UI's `匯入 JSON` button.
+This writes `case-readiness-report.json` and `case-readiness-checklist.md` next to the draft by default. They report missing case fields, reporter-profile readiness, attachment and metadata review notes, official human stop points, official-preflight freshness, and the next safe commands. They do not contact official websites. The checklist intentionally omits reporter-profile values; you can import the JSON report with the browser UI's `匯入 JSON` button.
 
 Record a confirmed frequent location after you have reviewed a draft:
 
@@ -171,6 +171,6 @@ npm run verify:locations
 - GPS and reverse geocoding are only starting points. If Apple CoreLocation times out or returns no placemark, the tool keeps coordinate/map candidates and requires manual confirmation.
 - Confirmed frequent locations are convenience hints only. The location review UI records which candidate the user adopted, but it still does not prove the legal road segment or driving direction.
 - Live official-site automation is guarded and should not proceed until real case data and reporter profile fields are complete.
-- `review:case` can report that local data is ready to open the official site for human review, but CAPTCHA, Email verification, declarations, and final submit remain manual.
+- `review:case` can report that local data plus a fresh read-only official preflight are ready to open the official site for human review, but CAPTCHA, Email verification, declarations, and final submit remain manual.
 - Taipei's official SPA may time out in headless Playwright even when static resources are reachable; use `official:preflight` as a diagnostic rather than a submission path.
 - Final submission remains manual.

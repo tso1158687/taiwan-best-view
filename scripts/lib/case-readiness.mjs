@@ -13,6 +13,59 @@ function statusFromMissing(missing) {
   return missing.length === 0 ? "ready_for_human_review" : "needs_missing_data";
 }
 
+function summarizeOfficialPreflight({ jurisdiction, officialPreflight, now = new Date() }) {
+  if (!officialPreflight) {
+    return {
+      status: "not_provided",
+      issues: ["official_preflight.missing"],
+      note: "Run a read-only official preflight before opening the official site for human review.",
+    };
+  }
+
+  const issues = [];
+  const generatedAt = officialPreflight.generatedAt || "";
+  const generatedTime = generatedAt ? new Date(generatedAt) : null;
+  const ageHours = generatedTime && !Number.isNaN(generatedTime.getTime())
+    ? Math.round(((now.getTime() - generatedTime.getTime()) / 36e5) * 10) / 10
+    : null;
+
+  if (officialPreflight.jurisdiction !== jurisdiction) {
+    issues.push("official_preflight.jurisdiction_mismatch");
+  }
+  if (officialPreflight.mode !== "live_official_read_only_preflight") {
+    issues.push("official_preflight.invalid_mode");
+  }
+  if (officialPreflight.status !== "ok") {
+    issues.push("official_preflight.not_ok");
+  }
+  if (officialPreflight.externalSideEffects !== false) {
+    issues.push("official_preflight.side_effects_not_false");
+  }
+  if (officialPreflight.dataFilled !== false || officialPreflight.fileUploaded !== false || officialPreflight.finalSubmitTriggered !== false) {
+    issues.push("official_preflight.not_read_only");
+  }
+  if (ageHours === null) {
+    issues.push("official_preflight.generated_at_missing");
+  } else if (ageHours > 24) {
+    issues.push("official_preflight.stale");
+  }
+
+  return {
+    status: issues.length === 0 ? "ok" : "needs_recheck",
+    generatedAt,
+    ageHours,
+    jurisdiction: officialPreflight.jurisdiction || "",
+    preflightStatus: officialPreflight.status || "",
+    present: officialPreflight.summary?.present ?? null,
+    deferred: officialPreflight.summary?.deferred ?? null,
+    missing: officialPreflight.summary?.missing || [],
+    issues,
+    note: issues.length === 0
+      ? "Official preflight is fresh, read-only, and matches this case jurisdiction."
+      : "Re-run the read-only official preflight before opening the official site.",
+  };
+}
+
 function summarizeAttachmentReadiness({ draft, packet }) {
   const packetAttachments = packet.attachments || [];
   const draftAttachments = draft.attachments || [];
@@ -104,7 +157,7 @@ function summarizePhotoAnalysisReadiness(draft) {
   };
 }
 
-function nextStepsForReport({ packet, reporterProfile, locationReadiness }) {
+function nextStepsForReport({ packet, reporterProfile, locationReadiness, officialPreflightReadiness }) {
   const steps = [];
 
   if (packet.missing.length > 0) {
@@ -119,17 +172,19 @@ function nextStepsForReport({ packet, reporterProfile, locationReadiness }) {
     steps.push("Review the location candidates and manually confirm the official district, road, and address note.");
   }
 
-  steps.push("Before any live official-site run, re-check the official preflight for the target jurisdiction.");
+  if (officialPreflightReadiness.status !== "ok") {
+    steps.push("Before any live official-site run, re-check the official preflight for the target jurisdiction.");
+  }
   steps.push("Complete CAPTCHA, Email verification, declarations, pre-submit review, and final submit manually.");
 
-  if (packet.status === "ready_for_human_review") {
+  if (packet.status === "ready_for_human_review" && officialPreflightReadiness.status === "ok") {
     steps.unshift("The packet has enough local data to open the official website for human review.");
   }
 
   return unique(steps);
 }
 
-export async function createCaseReadinessReport({ draft, reporterProfile = null, draftPath = "" }) {
+export async function createCaseReadinessReport({ draft, reporterProfile = null, draftPath = "", officialPreflight = null, now = new Date() }) {
   const packet = await createSubmissionPacket({ draft, reporterProfile });
   const caseMissing = packet.missing.filter((field) => field.startsWith("case.") || field === "attachments");
   const reporterMissing = packet.missing.filter((field) => field.startsWith("reporter."));
@@ -137,6 +192,11 @@ export async function createCaseReadinessReport({ draft, reporterProfile = null,
   const locationReadiness = summarizeLocationReadiness(draft);
   const photoAnalysisReadiness = summarizePhotoAnalysisReadiness(draft);
   const reporterSummary = summarizeReporterProfile(reporterProfile);
+  const officialPreflightReadiness = summarizeOfficialPreflight({
+    jurisdiction: packet.jurisdiction,
+    officialPreflight,
+    now,
+  });
 
   const reviewItems = [
     {
@@ -169,7 +229,15 @@ export async function createCaseReadinessReport({ draft, reporterProfile = null,
       status: "human_required",
       stopBefore: packet.official.stopBefore,
     },
+    {
+      id: "official_preflight",
+      ...officialPreflightReadiness,
+    },
   ];
+
+  const canOpenOfficialSiteForHumanReview =
+    packet.status === "ready_for_human_review" &&
+    officialPreflightReadiness.status === "ok";
 
   return {
     generatedAt: new Date().toISOString(),
@@ -177,8 +245,8 @@ export async function createCaseReadinessReport({ draft, reporterProfile = null,
     caseId: draft.caseId || "",
     jurisdiction: packet.jurisdiction,
     officialUrl: packet.official.url,
-    status: packet.status,
-    canOpenOfficialSiteForHumanReview: packet.status === "ready_for_human_review",
+    status: canOpenOfficialSiteForHumanReview ? "ready_for_human_review" : packet.status === "ready_for_human_review" ? "needs_official_preflight" : packet.status,
+    canOpenOfficialSiteForHumanReview,
     finalSubmitAutomated: false,
     missing: {
       all: packet.missing,
@@ -186,9 +254,10 @@ export async function createCaseReadinessReport({ draft, reporterProfile = null,
       reporter: reporterMissing,
     },
     reporterProfile: reporterSummary,
+    officialPreflight: officialPreflightReadiness,
     reviewItems,
     manualBoundaries: packet.manualBoundaries,
     stopBefore: packet.official.stopBefore,
-    nextSteps: nextStepsForReport({ packet, reporterProfile, locationReadiness }),
+    nextSteps: nextStepsForReport({ packet, reporterProfile, locationReadiness, officialPreflightReadiness }),
   };
 }

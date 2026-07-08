@@ -79,13 +79,35 @@ async function fixtureDraft() {
 
 async function main() {
   const draft = await fixtureDraft();
-  const incompleteReport = await createCaseReadinessReport({ draft, draftPath: "/tmp/draft.json" });
+  const now = new Date("2026-07-09T12:00:00.000Z");
+  const freshOfficialPreflight = {
+    generatedAt: "2026-07-09T08:00:00.000Z",
+    jurisdiction: "taipei",
+    mode: "live_official_read_only_preflight",
+    status: "ok",
+    externalSideEffects: false,
+    dataFilled: false,
+    fileUploaded: false,
+    finalSubmitTriggered: false,
+    summary: {
+      present: 6,
+      deferred: 3,
+      missing: [],
+    },
+  };
+  const staleOfficialPreflight = {
+    ...freshOfficialPreflight,
+    generatedAt: "2026-07-07T08:00:00.000Z",
+  };
+
+  const incompleteReport = await createCaseReadinessReport({ draft, draftPath: "/tmp/draft.json", now });
   assert(incompleteReport.status === "needs_missing_data", "Expected incomplete case to need missing data.");
   assert(incompleteReport.missing.case.includes("case.plate"), "Expected missing plate to be reported.");
   assert(incompleteReport.missing.reporter.includes("reporter.name"), "Expected missing reporter profile fields.");
   assert(incompleteReport.reviewItems.some((item) => item.id === "attachments" && item.status === "needs_review"), "Expected sidecar metadata to require review.");
   assert(incompleteReport.stopBefore.includes("final_submit"), "Expected final submit to remain a stop boundary.");
   assert(incompleteReport.canOpenOfficialSiteForHumanReview === false, "Expected incomplete case not to open official site.");
+  assert(incompleteReport.officialPreflight.status === "not_provided", "Expected missing official preflight to be reported.");
 
   const reporterProfile = {
     identityType: "national_id",
@@ -108,20 +130,40 @@ async function main() {
       label: "25.022475, 121.426317",
     },
   };
+  const noPreflightReport = await createCaseReadinessReport({
+    draft: completeDraft,
+    reporterProfile,
+    draftPath: "/tmp/draft.json",
+    now,
+  });
+  const stalePreflightReport = await createCaseReadinessReport({
+    draft: completeDraft,
+    reporterProfile,
+    draftPath: "/tmp/draft.json",
+    officialPreflight: staleOfficialPreflight,
+    now,
+  });
   const readyReport = await createCaseReadinessReport({
     draft: completeDraft,
     reporterProfile,
     draftPath: "/tmp/draft.json",
+    officialPreflight: freshOfficialPreflight,
+    now,
   });
   const readyMarkdown = formatCaseReadinessMarkdown({
     ...readyReport,
     commandHints: ["npm run prepare:submission -- /tmp/draft.json /tmp/reporter-profile.local.json"],
   });
 
-  assert(readyReport.status === "ready_for_human_review", "Expected complete local data to be ready for human review.");
+  assert(noPreflightReport.status === "needs_official_preflight", "Expected complete local data without preflight to need official preflight.");
+  assert(noPreflightReport.canOpenOfficialSiteForHumanReview === false, "Expected missing preflight to block official-site opening.");
+  assert(stalePreflightReport.status === "needs_official_preflight", "Expected stale preflight to need recheck.");
+  assert(stalePreflightReport.officialPreflight.issues.includes("official_preflight.stale"), "Expected stale official preflight issue.");
+  assert(readyReport.status === "ready_for_human_review", "Expected complete local data and fresh official preflight to be ready for human review.");
   assert(readyReport.canOpenOfficialSiteForHumanReview === true, "Expected ready case to allow human-reviewed official site opening.");
   assert(readyReport.finalSubmitAutomated === false, "Expected final submit to remain manual.");
   assert(readyReport.reporterProfile.status === "ready", "Expected reporter profile summary to be ready.");
+  assert(readyReport.officialPreflight.status === "ok", "Expected fresh official preflight to be ok.");
   assert(!JSON.stringify(readyReport.reporterProfile).includes("A123456789"), "Reporter summary must not expose identity number.");
   assert(readyReport.reviewItems.some((item) => item.id === "official_human_stops" && item.status === "human_required"), "Expected human stop review item.");
   assert(readyMarkdown.includes("# Case Readiness Checklist"), "Expected markdown checklist title.");
@@ -134,9 +176,11 @@ async function main() {
     ok: true,
     incompleteStatus: incompleteReport.status,
     readyStatus: readyReport.status,
+    noPreflightStatus: noPreflightReport.status,
+    stalePreflightStatus: stalePreflightReport.status,
     canOpenOfficialSiteForHumanReview: readyReport.canOpenOfficialSiteForHumanReview,
     finalSubmitAutomated: readyReport.finalSubmitAutomated,
-    verified: ["missing data gate", "reporter privacy summary", "human official-site stop boundary", "markdown checklist"],
+    verified: ["missing data gate", "reporter privacy summary", "human official-site stop boundary", "official preflight freshness gate", "markdown checklist"],
   }, null, 2));
 }
 

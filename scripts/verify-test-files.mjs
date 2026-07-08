@@ -68,8 +68,28 @@ async function main() {
   assert(report.attachments.some((attachment) => attachment.gpsStatus === "missing"), "Expected one attachment missing GPS.");
 
   const draft = JSON.parse(await readFile(join(report.caseDirectory, "draft.json"), "utf8"));
+  const readinessNow = new Date("2026-07-09T12:00:00.000Z");
+  const taipeiOfficialPreflight = {
+    generatedAt: "2026-07-09T08:00:00.000Z",
+    jurisdiction: "taipei",
+    mode: "live_official_read_only_preflight",
+    status: "ok",
+    externalSideEffects: false,
+    dataFilled: false,
+    fileUploaded: false,
+    finalSubmitTriggered: false,
+    summary: {
+      present: 6,
+      deferred: 3,
+      missing: [],
+    },
+  };
   const packet = await createSubmissionPacket({ draft });
-  const readinessReport = await createCaseReadinessReport({ draft, draftPath: join(report.caseDirectory, "draft.json") });
+  const readinessReport = await createCaseReadinessReport({
+    draft,
+    draftPath: join(report.caseDirectory, "draft.json"),
+    now: readinessNow,
+  });
   assert(packet.official.url === "https://prsweb.tcpd.gov.tw/", "Expected Taipei official URL.");
   assert(packet.attachments.length === 2, "Expected packet attachment count.");
   assert(packet.missing.includes("case.plate"), "Expected plate to remain missing until human confirmation.");
@@ -102,17 +122,28 @@ async function main() {
     addressNote: "傳品牛排附近，實際位置仍需人工確認",
   };
   const readyPacket = await createSubmissionPacket({ draft: reviewedDraft, reporterProfile });
+  const noPreflightReadinessReport = await createCaseReadinessReport({
+    draft: reviewedDraft,
+    reporterProfile,
+    draftPath: join(report.caseDirectory, "draft.json"),
+    now: readinessNow,
+  });
   const readyReadinessReport = await createCaseReadinessReport({
     draft: reviewedDraft,
     reporterProfile,
     draftPath: join(report.caseDirectory, "draft.json"),
+    officialPreflight: taipeiOfficialPreflight,
+    now: readinessNow,
   });
   assert(readyPacket.status === "ready_for_human_review", "Expected complete reporter profile and reviewed case fields to produce a review-ready packet.");
   assert(readyPacket.missing.length === 0, "Expected no missing fields for review-ready packet.");
   assert(readyPacket.reporterProfile.provided === true, "Expected reporter profile to be marked as provided.");
-  assert(readyReadinessReport.status === "ready_for_human_review", "Expected readiness gate to allow human-reviewed official-site opening after local data is complete.");
+  assert(noPreflightReadinessReport.status === "needs_official_preflight", "Expected complete local data to require official preflight before official-site opening.");
+  assert(noPreflightReadinessReport.canOpenOfficialSiteForHumanReview === false, "Expected missing official preflight to block official-site opening.");
+  assert(readyReadinessReport.status === "ready_for_human_review", "Expected readiness gate to allow human-reviewed official-site opening after local data and official preflight are complete.");
   assert(readyReadinessReport.canOpenOfficialSiteForHumanReview === true, "Expected readiness gate to allow official-site opening only for human review.");
   assert(readyReadinessReport.finalSubmitAutomated === false, "Expected readiness gate to keep final submit manual.");
+  assert(readyReadinessReport.officialPreflight.status === "ok", "Expected readiness gate to include fresh official preflight.");
   const taipeiPlan = createTaipeiAutomationPlan(packet);
   assert(taipeiPlan.status === "blocked_by_missing_data", "Expected Taipei dry run to be blocked by missing data.");
   assert(taipeiPlan.safety.dryRunOnly === true, "Expected Taipei plan to be dry-run only.");
@@ -196,8 +227,10 @@ async function main() {
     caseReadinessStatus: readinessReport.status,
     caseReadinessCanOpenOfficialSite: readinessReport.canOpenOfficialSiteForHumanReview,
     reviewedPacketStatus: readyPacket.status,
+    noPreflightCaseReadinessStatus: noPreflightReadinessReport.status,
     reviewedCaseReadinessStatus: readyReadinessReport.status,
     reviewedCaseReadinessCanOpenOfficialSite: readyReadinessReport.canOpenOfficialSiteForHumanReview,
+    reviewedCaseReadinessOfficialPreflightStatus: readyReadinessReport.officialPreflight.status,
     reporterProfileSummaryStatus: reporterSummary.status,
     metadataEmbeddingStatuses: converted.map((attachment) => attachment.metadataEmbeddingStatus),
     taipeiDryRunStatus: taipeiPlan.status,

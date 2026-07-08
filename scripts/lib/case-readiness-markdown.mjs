@@ -38,6 +38,7 @@ function reviewItemSummary(item) {
 export function formatCaseReadinessMarkdown(report) {
   const reporter = report.reporterProfile || {};
   const missing = report.missing || {};
+  const preflight = report.officialPreflight || {};
   const commandHints = report.commandHints || [];
 
   return [
@@ -80,6 +81,16 @@ export function formatCaseReadinessMarkdown(report) {
     "## Human Stop Points",
     "",
     list(report.stopBefore),
+    "",
+    "## Official Preflight",
+    "",
+    `Status: \`${preflight.status || "not_provided"}\``,
+    `Generated: ${preflight.generatedAt || "not provided"}`,
+    `Age hours: ${preflight.ageHours ?? "unknown"}`,
+    `Preflight status: ${preflight.preflightStatus || "not provided"}`,
+    "",
+    "Issues:",
+    list(preflight.issues),
     "",
     "## Next Steps",
     "",

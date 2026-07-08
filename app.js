@@ -404,6 +404,7 @@ function formatRecordStatus(status) {
     submitted: "已送件",
     not_prepared: "尚未產生送件包",
     needs_missing_data: "缺少必要資料",
+    needs_official_preflight: "需重跑官方檢查",
     blocked_by_missing_data: "缺少資料，已停止",
     submitted_by_user: "使用者已手動送件",
     none: "無補正",

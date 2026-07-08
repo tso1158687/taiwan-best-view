@@ -5,7 +5,7 @@ import { createCaseReadinessReport } from "./lib/case-readiness.mjs";
 import { formatCaseReadinessMarkdown } from "./lib/case-readiness-markdown.mjs";
 
 function usage() {
-  console.log("Usage: node scripts/review-case-readiness.mjs <case-draft.json> [reporter-profile.json] [--json output.json] [--markdown output.md]");
+  console.log("Usage: node scripts/review-case-readiness.mjs <case-draft.json> [reporter-profile.json] [--official-preflight preflight.json] [--json output.json] [--markdown output.md]");
   console.log("");
   console.log("Creates a local readiness report for human-reviewed official-site submission.");
   console.log("Does not contact official websites, bypass CAPTCHA, or submit anything.");
@@ -15,6 +15,7 @@ function parseArgs(argv) {
   const result = {
     draftPath: argv[2],
     reporterPath: "",
+    officialPreflightPath: "",
     jsonPath: "",
     markdownPath: "",
   };
@@ -26,6 +27,9 @@ function parseArgs(argv) {
       index += 1;
     } else if (arg === "--markdown") {
       result.markdownPath = argv[index + 1] || "";
+      index += 1;
+    } else if (arg === "--official-preflight") {
+      result.officialPreflightPath = argv[index + 1] || "";
       index += 1;
     } else if (!result.reporterPath) {
       result.reporterPath = arg;
@@ -67,7 +71,10 @@ async function main() {
   const reporterPath = options.reporterPath ? resolve(options.reporterPath) : "";
   const draft = await readJson(draftPath);
   const reporterProfile = reporterPath ? await readJson(reporterPath) : null;
-  const report = await createCaseReadinessReport({ draft, reporterProfile, draftPath });
+  const officialPreflight = options.officialPreflightPath
+    ? await readJson(resolve(options.officialPreflightPath))
+    : null;
+  const report = await createCaseReadinessReport({ draft, reporterProfile, draftPath, officialPreflight });
   const outputPath = options.jsonPath
     ? resolve(options.jsonPath)
     : join(dirname(draftPath), "case-readiness-report.json");
