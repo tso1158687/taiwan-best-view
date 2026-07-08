@@ -58,7 +58,7 @@ npm run review:workflow -- cases/<case-id> --markdown cases/<case-id>/case-workf
 ```
 
 `validate:case-draft` checks the local draft structure and attachment metadata fields. It does not read attachment file contents or contact official websites.
-`review:workflow` checks which local artifacts exist in a case folder and suggests the next safe commands. You can import `case-workflow-checklist.json` with the browser UI's `匯入 JSON` button.
+`review:workflow` checks which local artifacts exist in a case folder, highlights one recommended next action, and lists the next safe commands. You can import `case-workflow-checklist.json` with the browser UI's `匯入 JSON` button.
 
 Check local metadata tooling:
 

@@ -88,6 +88,159 @@ function commandHints({ caseDirectory, jurisdiction, artifacts }) {
   return commands;
 }
 
+function artifactPresent(artifacts, id) {
+  return artifacts.some((artifact) => artifact.id === id && artifact.status === "present");
+}
+
+function prototypeCommand({ caseDirectory, jurisdiction }) {
+  const planFile = jurisdiction === "new_taipei" ? "new-taipei-automation-plan.json" : "taipei-automation-plan.json";
+  const script = jurisdiction === "new_taipei" ? "new-taipei:prototype" : "taipei:prototype";
+  return `npm run ${script} -- ${caseDirectory}/${planFile} --readiness-report ${caseDirectory}/case-readiness-report.json --allow-network`;
+}
+
+function dryRunCommand({ caseDirectory, jurisdiction }) {
+  const packetPath = `${caseDirectory}/submission-packet.json`;
+  return jurisdiction === "new_taipei"
+    ? `npm run new-taipei:dry-run -- ${packetPath}`
+    : `npm run taipei:dry-run -- ${packetPath}`;
+}
+
+function recommendedNextAction({ caseDirectory, jurisdiction, artifacts, draftValidation, packet, readiness, record }) {
+  const draftPath = `${caseDirectory}/draft.json`;
+  const packetPath = `${caseDirectory}/submission-packet.json`;
+  const preflightPath = `cases/${officialPreflightFile(jurisdiction)}`;
+  const has = (id) => artifactPresent(artifacts, id);
+
+  if (!has("draft")) {
+    return {
+      id: "create_case",
+      title: "Create a case draft",
+      reason: "This case folder does not contain draft.json yet.",
+      command: "npm run create:case -- test-files --jurisdiction taipei",
+      requiresHuman: true,
+    };
+  }
+
+  if (draftValidation.status !== "ok") {
+    return {
+      id: "fix_case_draft",
+      title: "Fix the case draft",
+      reason: "draft.json exists but does not pass local schema validation.",
+      command: `npm run validate:case-draft -- ${draftPath}`,
+      requiresHuman: true,
+    };
+  }
+
+  if (!has("submission_packet")) {
+    return {
+      id: "prepare_submission_packet",
+      title: "Prepare the submission packet",
+      reason: "The draft is valid, but submission-packet.json has not been generated.",
+      command: `npm run prepare:submission -- ${draftPath} reporter-profile.local.json`,
+      requiresHuman: false,
+    };
+  }
+
+  if (packet?.status === "needs_missing_data") {
+    return {
+      id: "fill_missing_data",
+      title: "Fill missing case or reporter fields",
+      reason: `The submission packet is missing ${packet.missing?.length || 0} required field(s).`,
+      command: `npm run prepare:submission -- ${draftPath} reporter-profile.local.json`,
+      requiresHuman: true,
+    };
+  }
+
+  if (!has("readiness_report")) {
+    return {
+      id: "review_case_readiness",
+      title: "Run the readiness review",
+      reason: "The submission packet is ready, but the guarded official-site readiness report is missing.",
+      command: `npm run review:case -- ${draftPath} reporter-profile.local.json --official-preflight ${preflightPath}`,
+      requiresHuman: false,
+    };
+  }
+
+  if (readiness?.status === "needs_missing_data") {
+    return {
+      id: "resolve_readiness_missing_data",
+      title: "Resolve readiness missing data",
+      reason: "The readiness report still blocks official-site opening because case or reporter data is incomplete.",
+      command: `npm run review:case -- ${draftPath} reporter-profile.local.json --official-preflight ${preflightPath}`,
+      requiresHuman: true,
+    };
+  }
+
+  if (readiness?.status === "needs_official_preflight") {
+    return {
+      id: "refresh_official_preflight",
+      title: "Refresh the official-site preflight",
+      reason: "Local data is complete, but a fresh matching read-only official preflight is required before opening the guarded browser.",
+      command: `npm run official:preflight -- ${jurisdiction} --allow-network --json ${preflightPath}`,
+      requiresHuman: true,
+    };
+  }
+
+  if (!has("automation_plan")) {
+    return {
+      id: "create_automation_plan",
+      title: "Create the guarded automation plan",
+      reason: "The case is locally reviewed, but the dry-run automation plan has not been generated.",
+      command: dryRunCommand({ caseDirectory, jurisdiction }),
+      requiresHuman: false,
+    };
+  }
+
+  if (!has("case_record")) {
+    const planFile = jurisdiction === "new_taipei" ? "new-taipei-automation-plan.json" : "taipei-automation-plan.json";
+    return {
+      id: "write_case_record",
+      title: "Write the local case record",
+      reason: "The guarded plan exists, but this case does not have a local case-record.json yet.",
+      command: `npm run write:case-record -- ${draftPath} ${packetPath} ${caseDirectory}/${planFile}`,
+      requiresHuman: false,
+    };
+  }
+
+  if (record?.submissionStatus !== "submitted_by_user" && readiness?.canOpenOfficialSiteForHumanReview === true) {
+    return {
+      id: "open_guarded_browser",
+      title: "Open the guarded browser flow",
+      reason: "The case is ready for human-reviewed official-site entry. CAPTCHA, Email verification, declarations, and final submit remain manual.",
+      command: prototypeCommand({ caseDirectory, jurisdiction }),
+      requiresHuman: true,
+    };
+  }
+
+  if (record?.submissionStatus !== "submitted_by_user") {
+    return {
+      id: "wait_for_manual_submission",
+      title: "Record manual submission details",
+      reason: "A case record exists, but official submission has not been marked as completed by the user.",
+      command: `npm run update:case-record -- ${caseDirectory}/case-record.json --case-number <official-case-number> --submitted-at <ISO datetime> --submission-status submitted_by_user --local-status submitted`,
+      requiresHuman: true,
+    };
+  }
+
+  if (!has("case_record_summary")) {
+    return {
+      id: "export_case_record_summary",
+      title: "Export the case record summary",
+      reason: "The case is marked as manually submitted, but the human-readable archive summary is missing.",
+      command: `npm run export:case-record -- ${caseDirectory}/case-record.json`,
+      requiresHuman: false,
+    };
+  }
+
+  return {
+    id: "workflow_complete",
+    title: "Workflow is locally complete",
+    reason: "The local artifacts, manual submission record, and archive summary are present.",
+    command: "",
+    requiresHuman: false,
+  };
+}
+
 export async function createCaseWorkflowChecklist({ caseDirectory }) {
   const draftPath = join(caseDirectory, "draft.json");
   const draft = await readJsonIfExists(draftPath);
@@ -119,6 +272,7 @@ export async function createCaseWorkflowChecklist({ caseDirectory }) {
       automation: statusOrMissing(record?.automationStatus),
     },
     artifacts,
+    nextAction: recommendedNextAction({ caseDirectory, jurisdiction, artifacts, draftValidation, packet, readiness, record }),
     nextCommands: commandHints({ caseDirectory, jurisdiction, artifacts }),
   };
 }
@@ -146,6 +300,14 @@ export function formatCaseWorkflowChecklistMarkdown(checklist) {
     ...(checklist.draftValidation.issues.length > 0
       ? checklist.draftValidation.issues.map((issue) => `- ${issue}`)
       : ["- -"]),
+    "",
+    "## Recommended Next Action",
+    "",
+    `- ID: ${checklist.nextAction?.id || "-"}`,
+    `- Title: ${checklist.nextAction?.title || "-"}`,
+    `- Reason: ${checklist.nextAction?.reason || "-"}`,
+    `- Requires human: ${checklist.nextAction?.requiresHuman ? "yes" : "no"}`,
+    `- Command: ${checklist.nextAction?.command ? `\`${checklist.nextAction.command}\`` : "-"}`,
     "",
     "## Next Commands",
     "",

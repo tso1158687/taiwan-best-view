@@ -614,6 +614,25 @@ function renderWorkflowView(view) {
   summary.append(title, details);
   workflowList.append(summary);
 
+  if (view.nextAction) {
+    const nextActionCard = document.createElement("article");
+    const nextActionTitle = document.createElement("div");
+    const nextActionDetails = document.createElement("div");
+
+    nextActionCard.className = "case-record-card";
+    nextActionTitle.className = "case-record-title";
+    nextActionTitle.textContent = "推薦下一步";
+    nextActionDetails.className = "case-record-details";
+    nextActionDetails.append(
+      createDetail("動作", view.nextAction.title || view.nextAction.id || ""),
+      createDetail("原因", view.nextAction.reason || ""),
+      createDetail("需要人工", view.nextAction.requiresHuman ? "是" : "否"),
+      createDetail("命令", view.nextAction.command || "")
+    );
+    nextActionCard.append(nextActionTitle, nextActionDetails);
+    workflowList.append(nextActionCard);
+  }
+
   const artifacts = view.artifacts || [];
   if (artifacts.length > 0) {
     const artifactCard = document.createElement("article");

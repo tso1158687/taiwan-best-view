@@ -89,6 +89,7 @@ async function main() {
   const draftOnlyWorkflowChecklist = await createCaseWorkflowChecklist({ caseDirectory: report.caseDirectory });
   assert(draftOnlyWorkflowChecklist.draftValidation.status === "ok", "Expected workflow checklist to validate draft.");
   assert(draftOnlyWorkflowChecklist.statuses.submissionPacket === "missing", "Expected workflow checklist to report missing submission packet.");
+  assert(draftOnlyWorkflowChecklist.nextAction.id === "prepare_submission_packet", "Expected workflow checklist to recommend preparing the submission packet.");
   assert(draftOnlyWorkflowChecklist.nextCommands.some((command) => command.includes("prepare:submission")), "Expected workflow checklist to suggest submission preparation.");
   const readinessNow = new Date("2026-07-09T12:00:00.000Z");
   const taipeiOfficialPreflight = {
@@ -326,6 +327,7 @@ async function main() {
   assert(completeWorkflowChecklist.statuses.readinessReport === "ready_for_human_review", "Expected workflow checklist to read ready readiness report.");
   assert(completeWorkflowChecklist.statuses.caseRecord === "submitted_by_user", "Expected workflow checklist to read submitted case record.");
   assert(completeWorkflowChecklist.artifacts.every((artifact) => artifact.status === "present"), "Expected workflow checklist fixture to have all local artifacts.");
+  assert(completeWorkflowChecklist.nextAction.id === "workflow_complete", "Expected workflow checklist to report local workflow completion.");
   assert(completeWorkflowChecklist.nextCommands.some((command) => command.includes("taipei:prototype")), "Expected workflow checklist to include guarded prototype command.");
   const uiVerification = await run("npm", ["run", "verify:ui"]);
   assert(uiVerification.stdout.includes("\"ok\": true"), "Expected UI fixture verification to pass.");
@@ -383,6 +385,7 @@ async function main() {
     caseCorrectionItemCount: caseSummary.correctionItemCount,
     caseRecordMarkdownVerification: "ok",
     workflowChecklistVerification: completeWorkflowChecklist.statuses.caseRecord,
+    workflowNextAction: completeWorkflowChecklist.nextAction.id,
     uiFixtureVerification: "ok",
   }, null, 2));
 }

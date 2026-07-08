@@ -60,6 +60,7 @@ async function main() {
     draftValidationStatus: checklist.draftValidation.status,
     submissionPacketStatus: checklist.statuses.submissionPacket,
     readinessReportStatus: checklist.statuses.readinessReport,
+    nextAction: checklist.nextAction,
     nextCommandCount: checklist.nextCommands.length,
   }, null, 2));
 }

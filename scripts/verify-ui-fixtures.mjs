@@ -201,6 +201,13 @@ async function main() {
         status: "missing",
       },
     ],
+    nextAction: {
+      id: "open_guarded_browser",
+      title: "Open the guarded browser flow",
+      reason: "The case is ready for human-reviewed official-site entry.",
+      command: "npm run taipei:prototype -- cases/case-ui-fixture/taipei-automation-plan.json --readiness-report cases/case-ui-fixture/case-readiness-report.json --allow-network",
+      requiresHuman: true,
+    },
     nextCommands: [
       "npm run taipei:prototype -- cases/case-ui-fixture/taipei-automation-plan.json --readiness-report cases/case-ui-fixture/case-readiness-report.json --allow-network",
       "npm run export:case-record -- cases/case-ui-fixture/case-record.json",
@@ -322,6 +329,8 @@ async function main() {
     assert(workflowText.includes("可接續"), "Expected workflow checklist state to render.");
     assert(workflowText.includes("Case record summary"), "Expected workflow artifact to render.");
     assert(workflowText.includes("缺少"), "Expected missing workflow artifact status to render.");
+    assert(workflowText.includes("推薦下一步"), "Expected workflow next action section to render.");
+    assert(workflowText.includes("Open the guarded browser flow"), "Expected workflow next action title to render.");
     assert(workflowText.includes("taipei:prototype"), "Expected workflow next command to render.");
 
     await importDraftJson(page, draftPath, "25.022475");
