@@ -84,6 +84,15 @@ async function main() {
       missing: [],
     },
   };
+  const newTaipeiOfficialPreflight = {
+    ...taipeiOfficialPreflight,
+    jurisdiction: "new_taipei",
+    summary: {
+      present: 20,
+      deferred: 0,
+      missing: [],
+    },
+  };
   const packet = await createSubmissionPacket({ draft });
   const readinessReport = await createCaseReadinessReport({
     draft,
@@ -197,6 +206,42 @@ async function main() {
   assert(newTaipeiSelectors.finalSubmitBlocked === true, "Expected New Taipei selector manifest to block final submit.");
   assert(newTaipeiPrototype.status === "blocked_by_missing_data", "Expected New Taipei prototype to refuse missing data.");
   assert(newTaipeiPrototype.captchaBypass === false, "Expected New Taipei prototype to disable CAPTCHA bypass.");
+  const reviewedNewTaipeiDraft = { ...reviewedDraft, jurisdiction: "new_taipei" };
+  const readyNewTaipeiPacket = await createSubmissionPacket({
+    draft: reviewedNewTaipeiDraft,
+    reporterProfile,
+  });
+  const readyNewTaipeiReadinessReport = await createCaseReadinessReport({
+    draft: reviewedNewTaipeiDraft,
+    reporterProfile,
+    draftPath: join(report.caseDirectory, "draft.json"),
+    officialPreflight: newTaipeiOfficialPreflight,
+    now: readinessNow,
+  });
+  const readyNewTaipeiPlan = createNewTaipeiAutomationPlan(readyNewTaipeiPacket);
+  const newTaipeiPrototypeWithoutReadiness = await createPrototypeRun({
+    plan: readyNewTaipeiPlan,
+    allowNetwork: true,
+  });
+  const newTaipeiPrototypeWithTaipeiReadiness = await createPrototypeRun({
+    plan: readyNewTaipeiPlan,
+    allowNetwork: true,
+    readinessReport: readyReadinessReport,
+  });
+  const newTaipeiPrototypeWithReadiness = await createPrototypeRun({
+    plan: readyNewTaipeiPlan,
+    allowNetwork: true,
+    readinessReport: readyNewTaipeiReadinessReport,
+  });
+  assert(readyNewTaipeiPacket.status === "ready_for_human_review", "Expected reviewed New Taipei packet to be ready.");
+  assert(readyNewTaipeiReadinessReport.status === "ready_for_human_review", "Expected reviewed New Taipei readiness report to be ready.");
+  assert(readyNewTaipeiPlan.status === "ready_until_captcha_email_verification", "Expected reviewed New Taipei plan to be ready up to CAPTCHA/Email verification.");
+  assert(newTaipeiPrototypeWithoutReadiness.status === "blocked_by_readiness_report", "Expected live New Taipei prototype to require a readiness report.");
+  assert(newTaipeiPrototypeWithTaipeiReadiness.status === "blocked_by_readiness_report", "Expected live New Taipei prototype to reject Taipei readiness report.");
+  assert(newTaipeiPrototypeWithTaipeiReadiness.readinessGate.issues.includes("readiness_report.jurisdiction_mismatch"), "Expected cross-jurisdiction readiness report mismatch issue.");
+  assert(newTaipeiPrototypeWithTaipeiReadiness.readinessGate.issues.includes("readiness_report.official_url_mismatch"), "Expected cross-official-url readiness report mismatch issue.");
+  assert(newTaipeiPrototypeWithReadiness.status === "ready_for_guarded_browser", "Expected live New Taipei prototype to pass with matching readiness report.");
+  assert(newTaipeiPrototypeWithReadiness.readinessGate.status === "ok", "Expected live New Taipei prototype readiness gate to pass.");
   const newTaipeiFixtureFill = await runFixtureFill({
     jurisdiction: "new_taipei",
     packet: await createReviewedPacketForFixture(newTaipeiPacket),
@@ -265,6 +310,9 @@ async function main() {
     newTaipeiDryRunStatus: newTaipeiPlan.status,
     newTaipeiDryRunManualStops: newTaipeiPlan.steps.filter((item) => item.requiresHuman).length,
     newTaipeiPrototypeStatus: newTaipeiPrototype.status,
+    newTaipeiPrototypeWithoutReadinessStatus: newTaipeiPrototypeWithoutReadiness.status,
+    newTaipeiPrototypeWithTaipeiReadinessStatus: newTaipeiPrototypeWithTaipeiReadiness.status,
+    newTaipeiPrototypeWithReadinessStatus: newTaipeiPrototypeWithReadiness.status,
     newTaipeiSelectorFieldCount: newTaipeiSelectors.fieldCount,
     newTaipeiFixtureFillStatus: newTaipeiFixtureFill.status,
     newTaipeiFixtureFilledFields: newTaipeiFixtureFill.filledFieldCount,

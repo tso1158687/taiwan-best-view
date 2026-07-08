@@ -41,10 +41,12 @@ export async function loadAutomationPlan(planPath) {
   return JSON.parse(await readFile(planPath, "utf8"));
 }
 
-function summarizeReadinessReport(readinessReport) {
+function summarizeReadinessReport({ plan, readinessReport }) {
   if (!readinessReport) {
     return {
       status: "not_provided",
+      jurisdiction: "",
+      officialUrl: "",
       canOpenOfficialSiteForHumanReview: false,
       officialPreflightStatus: "not_provided",
       issues: ["readiness_report.missing"],
@@ -53,6 +55,12 @@ function summarizeReadinessReport(readinessReport) {
 
   const officialPreflightStatus = readinessReport.officialPreflight?.status || "not_provided";
   const issues = [];
+  if (readinessReport.jurisdiction !== plan.jurisdiction) {
+    issues.push("readiness_report.jurisdiction_mismatch");
+  }
+  if (readinessReport.officialUrl !== plan.officialUrl) {
+    issues.push("readiness_report.official_url_mismatch");
+  }
   if (readinessReport.status !== "ready_for_human_review") {
     issues.push("readiness_report.not_ready");
   }
@@ -66,6 +74,8 @@ function summarizeReadinessReport(readinessReport) {
   return {
     status: issues.length === 0 ? "ok" : "needs_recheck",
     reportStatus: readinessReport.status || "",
+    jurisdiction: readinessReport.jurisdiction || "",
+    officialUrl: readinessReport.officialUrl || "",
     canOpenOfficialSiteForHumanReview: readinessReport.canOpenOfficialSiteForHumanReview === true,
     officialPreflightStatus,
     issues,
@@ -75,7 +85,7 @@ function summarizeReadinessReport(readinessReport) {
 export async function createPrototypeRun({ plan, allowNetwork = false, readinessReport = null }) {
   const playwrightAvailable = packageAvailable("playwright");
   const selectorValidation = validateSelectorManifest(plan.jurisdiction);
-  const readinessGate = summarizeReadinessReport(readinessReport);
+  const readinessGate = summarizeReadinessReport({ plan, readinessReport });
   const missingData = [
     ...(plan.missingCaseFields || []),
     ...(plan.missingReporterFields || []),

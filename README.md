@@ -111,7 +111,7 @@ npm run taipei:prototype -- cases/<case-id>/taipei-automation-plan.json --readin
 npm run new-taipei:prototype -- cases/<case-id>/new-taipei-automation-plan.json --readiness-report cases/<case-id>/case-readiness-report.json --allow-network
 ```
 
-The prototype commands refuse `--allow-network` runs unless the readiness report says the case can open the official site for human review. That requires complete local data and a fresh matching read-only official preflight.
+The prototype commands refuse `--allow-network` runs unless the readiness report says the case can open the official site for human review. That requires complete local data, a fresh matching read-only official preflight, and a readiness report whose jurisdiction and official URL match the automation plan.
 
 Run read-only live official-site preflights:
 
@@ -181,6 +181,6 @@ npm run verify:locations
 - Confirmed frequent locations are convenience hints only. The location review UI records which candidate the user adopted, but it still does not prove the legal road segment or driving direction.
 - Live official-site automation is guarded and should not proceed until real case data and reporter profile fields are complete.
 - `review:case` can report that local data plus a fresh read-only official preflight are ready to open the official site for human review, but CAPTCHA, Email verification, declarations, and final submit remain manual.
-- `taipei:prototype` and `new-taipei:prototype` require a ready `case-readiness-report.json` before any `--allow-network` official-site run.
+- `taipei:prototype` and `new-taipei:prototype` require a ready, matching-jurisdiction `case-readiness-report.json` before any `--allow-network` official-site run.
 - Taipei's official SPA may time out in headless Playwright even when static resources are reachable; use `official:preflight` as a diagnostic rather than a submission path.
 - Final submission remains manual.

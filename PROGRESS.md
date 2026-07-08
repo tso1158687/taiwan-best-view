@@ -58,7 +58,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T163452`
+- `cases/case-20260708T163747`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -82,6 +82,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - Case readiness gate with complete local data but missing/stale official preflight: `needs_official_preflight`.
 - Guarded prototype gate with complete local data but missing readiness report: `blocked_by_readiness_report`.
 - Guarded prototype gate with complete local data and ready readiness report: `ready_for_guarded_browser`.
+- Guarded New Taipei prototype rejects a Taipei readiness report with jurisdiction and official URL mismatch issues.
 - Case readiness Markdown checklist verification: `ok`, reporter-profile values omitted.
 - Metadata embedding statuses on this machine: `sidecar_only`, `sidecar_only`
 - Latest Taipei official preflight: `ok`, 6 present selectors, 3 deferred selectors, 0 missing selectors.
@@ -104,7 +105,7 @@ Important observed results from the real `test-files/` HEIC photos:
 1. For a real case, fill missing case fields and reporter profile, then run guarded dry-run/readiness/prototype commands before manually completing official verification and final submit.
 2. Keep re-running read-only official preflights before real assisted submission because official sites can change selectors.
 3. Run `npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.json --official-preflight cases/<jurisdiction>-live-preflight.json` before any live official-site run.
-4. Pass the resulting `case-readiness-report.json` to `taipei:prototype` or `new-taipei:prototype` with `--readiness-report` before using `--allow-network`.
+4. Pass the resulting same-jurisdiction `case-readiness-report.json` to `taipei:prototype` or `new-taipei:prototype` with `--readiness-report` before using `--allow-network`.
 5. After manually confirming a location, run `npm run record:location -- cases/<case-id>/draft.json` so later cases can reuse it as a review-only candidate.
 
 ## Resume Checklist
