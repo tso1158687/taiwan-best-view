@@ -11,7 +11,7 @@ The project is published as a public GitHub repository:
 - Progress baseline before reporter-profile and metadata-tooling work: `cb63e72 Record current project progress`
 - Local branch status at the time of this update: `main...origin/main` before the current work is committed
 
-`test-files/`, `cases/`, `node_modules/`, and `.DS_Store` are intentionally ignored and should not be committed because they may contain real evidence photos, generated case data, dependencies, or local machine files.
+`test-files/`, `cases/`, `node_modules/`, reporter-profile local files, and `.DS_Store` are intentionally ignored and should not be committed because they may contain real evidence photos, generated case data, personal data, dependencies, or local machine files.
 
 ## What Is Implemented
 
@@ -32,7 +32,7 @@ The project is published as a public GitHub repository:
 - Real-case readiness reports that gate official-site opening on complete local case and reporter data.
 - Official preflight freshness gate in readiness reports and checklists.
 - Human-readable readiness Markdown checklists that omit reporter-profile values.
-- Local reporter profile validation and submission-packet integration.
+- Local reporter profile validation, optional encrypted-at-rest storage, and submission-packet integration.
 - Guarded automation plans that stop before CAPTCHA, Email verification, declarations, and final submit.
 - Official selector manifests for Taipei and New Taipei.
 - Read-only live official-site preflight scripts.
@@ -58,7 +58,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T170056`
+- `cases/case-20260708T170724`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -79,6 +79,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - Location candidate confirmation UI verification: `ok`
 - Confirmed frequent-location candidate verification: `ok`
 - Reporter-profile fixture status: `ready`
+- Encrypted reporter-profile fixture verification: `ok`, encrypted envelope does not contain fixture identity number or email plaintext.
 - Reviewed packet status with complete fixture-only case and reporter fields: `ready_for_human_review`
 - Case readiness gate with incomplete real-case fields: `needs_missing_data`, official-site opening blocked.
 - Case readiness gate with complete fixture-only case, reporter fields, and fresh official preflight: `ready_for_human_review`, official-site opening allowed for human review only.
@@ -98,6 +99,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - Final official submission is intentionally manual.
 - CAPTCHA, Email verification, personal-data declarations, and final submit are not bypassed or automated.
 - Reporter identity/profile fields are not invented by the tool and must be provided by the user.
+- Encrypted reporter profiles require the user's local `REPORTER_PROFILE_PASSPHRASE`; losing the passphrase means the project cannot decrypt the profile.
 - GPS and reverse geocoding are only review candidates. Even after the user adopts a candidate, they do not prove the road, direction, or exact legal location.
 - Confirmed frequent locations are local hints only and must be re-checked against the current photo evidence.
 - CoreLocation reverse geocoding can time out or return unavailable.

@@ -3,12 +3,14 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { createCaseReadinessReport } from "./lib/case-readiness.mjs";
 import { formatCaseReadinessMarkdown } from "./lib/case-readiness-markdown.mjs";
+import { readReporterProfile } from "./lib/reporter-profile.mjs";
 
 function usage() {
   console.log("Usage: node scripts/review-case-readiness.mjs <case-draft.json> [reporter-profile.json] [--official-preflight preflight.json] [--json output.json] [--markdown output.md]");
   console.log("");
   console.log("Creates a local readiness report for human-reviewed official-site submission.");
   console.log("Does not contact official websites, bypass CAPTCHA, or submit anything.");
+  console.log("Encrypted reporter profiles require REPORTER_PROFILE_PASSPHRASE.");
 }
 
 function parseArgs(argv) {
@@ -70,7 +72,7 @@ async function main() {
   const draftPath = resolve(options.draftPath);
   const reporterPath = options.reporterPath ? resolve(options.reporterPath) : "";
   const draft = await readJson(draftPath);
-  const reporterProfile = reporterPath ? await readJson(reporterPath) : null;
+  const reporterProfile = reporterPath ? await readReporterProfile(reporterPath) : null;
   const officialPreflight = options.officialPreflightPath
     ? await readJson(resolve(options.officialPreflightPath))
     : null;

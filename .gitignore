@@ -3,6 +3,8 @@ node_modules/
 cases/
 test-files/
 reporter-profile.local.json
+reporter-profile.local*.json
+reporter-profile*.encrypted.json
 reporter-profiles/
 confirmed-locations.local.json
 *.tmp

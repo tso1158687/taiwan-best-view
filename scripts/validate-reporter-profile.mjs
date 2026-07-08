@@ -6,6 +6,7 @@ function usage() {
   console.log("Usage: node scripts/validate-reporter-profile.mjs <reporter-profile.json>");
   console.log("");
   console.log("Validates required reporter fields without printing personal data values.");
+  console.log("Encrypted profiles require REPORTER_PROFILE_PASSPHRASE.");
 }
 
 async function main() {

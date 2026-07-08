@@ -19,13 +19,13 @@ Taiwan Best View is a local-first helper for preparing Taiwan traffic violation 
 - Runs Playwright fixture fills locally without contacting official websites.
 - Records local case status, official case number, lookup password, and correction status after manual submission.
 - Imports case-readiness reports, workflow checklists, local case records, and case-history JSON into the browser UI for review.
-- Validates local reporter profiles without printing personal data values.
+- Validates local reporter profiles without printing personal data values, with optional encrypted-at-rest storage.
 
 ## Safety Boundaries
 
 This project does not bypass CAPTCHA, Email verification, identity declarations, or final submission. Official websites are not contacted by the default verification flow. Live official-site automation must only run after the user confirms the case facts and reporter profile.
 
-Do not commit real evidence photos, generated case folders, reporter profiles, or personal data. The repository ignores `test-files/`, `cases/`, and `node_modules/`.
+Do not commit real evidence photos, generated case folders, reporter profiles, or personal data. The repository ignores `test-files/`, `cases/`, reporter-profile local files, and `node_modules/`.
 
 ## Requirements
 
@@ -73,15 +73,20 @@ Create and validate a private reporter profile:
 ```sh
 npm run init:reporter-profile
 npm run validate:reporter-profile -- reporter-profile.local.json
+read -s REPORTER_PROFILE_PASSPHRASE
+export REPORTER_PROFILE_PASSPHRASE
+npm run encrypt:reporter-profile -- reporter-profile.local.json reporter-profile.local.encrypted.json
+npm run validate:reporter-profile -- reporter-profile.local.encrypted.json
 ```
 
-The validator reports missing/invalid field names only. It does not print identity numbers, names, phone numbers, addresses, or email values.
+The validator reports missing/invalid field names only. It does not print identity numbers, names, phone numbers, addresses, or email values. Encrypted reporter profiles use local AES-256-GCM encryption and require `REPORTER_PROFILE_PASSPHRASE` when passed to `validate:reporter-profile`, `prepare:submission`, or `review:case`.
 
 Prepare a submission packet:
 
 ```sh
 npm run prepare:submission -- cases/<case-id>/draft.json
 npm run prepare:submission -- cases/<case-id>/draft.json reporter-profile.local.json
+npm run prepare:submission -- cases/<case-id>/draft.json reporter-profile.local.encrypted.json
 ```
 
 Review whether a case is ready to open on the official website:
@@ -89,6 +94,7 @@ Review whether a case is ready to open on the official website:
 ```sh
 npm run review:case -- cases/<case-id>/draft.json
 npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.json
+npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.encrypted.json
 npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.json --official-preflight cases/taipei-live-preflight.json --markdown cases/<case-id>/case-readiness-checklist.md
 ```
 
@@ -189,6 +195,7 @@ npm run verify:locations
 - GPS and reverse geocoding are only starting points. If Apple CoreLocation times out or returns no placemark, the tool keeps coordinate/map candidates and requires manual confirmation.
 - Confirmed frequent locations are convenience hints only. The location review UI records which candidate the user adopted, but it still does not prove the legal road segment or driving direction.
 - Live official-site automation is guarded and should not proceed until real case data and reporter profile fields are complete.
+- Reporter profiles can be kept as ignored plaintext JSON for manual editing or converted into ignored encrypted JSON. Keep the passphrase outside the repository.
 - `review:case` can report that local data plus a fresh read-only official preflight are ready to open the official site for human review, but CAPTCHA, Email verification, declarations, and final submit remain manual.
 - `taipei:prototype` and `new-taipei:prototype` require a ready, matching-jurisdiction `case-readiness-report.json` before any `--allow-network` official-site run.
 - Taipei's official SPA may time out in headless Playwright even when static resources are reachable; use `official:preflight` as a diagnostic rather than a submission path.

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createCaseReadinessReport } from "./lib/case-readiness.mjs";
 import { formatCaseReadinessMarkdown } from "./lib/case-readiness-markdown.mjs";
+import { decryptReporterProfile, encryptReporterProfile, readReporterProfile } from "./lib/reporter-profile.mjs";
 
 function assert(condition, message) {
   if (!condition) {
@@ -119,6 +120,16 @@ async function main() {
     email: "fixture@example.com",
     residencePermitFrontFile: "",
   };
+  const encryptedReporterProfile = await encryptReporterProfile(reporterProfile, "fixture-passphrase");
+  const encryptedReporterProfileText = JSON.stringify(encryptedReporterProfile);
+  const encryptedReporterProfilePath = join(tmpdir(), `reporter-profile-${Date.now()}.encrypted.json`);
+  await writeFile(encryptedReporterProfilePath, `${encryptedReporterProfileText}\n`, { mode: 0o600 });
+  const decryptedReporterProfile = await decryptReporterProfile(encryptedReporterProfile, "fixture-passphrase");
+  const readEncryptedReporterProfile = await readReporterProfile(encryptedReporterProfilePath, { passphrase: "fixture-passphrase" });
+  assert(decryptedReporterProfile.identityNumber === reporterProfile.identityNumber, "Expected encrypted reporter profile to decrypt.");
+  assert(readEncryptedReporterProfile.email === reporterProfile.email, "Expected encrypted reporter profile file to read.");
+  assert(!encryptedReporterProfileText.includes("A123456789"), "Encrypted reporter profile must not include plaintext identity number.");
+  assert(!encryptedReporterProfileText.includes("fixture@example.com"), "Encrypted reporter profile must not include plaintext email.");
   const completeDraft = {
     ...draft,
     plate: "3999-YG",
@@ -180,7 +191,7 @@ async function main() {
     stalePreflightStatus: stalePreflightReport.status,
     canOpenOfficialSiteForHumanReview: readyReport.canOpenOfficialSiteForHumanReview,
     finalSubmitAutomated: readyReport.finalSubmitAutomated,
-    verified: ["missing data gate", "reporter privacy summary", "human official-site stop boundary", "official preflight freshness gate", "markdown checklist"],
+    verified: ["missing data gate", "reporter privacy summary", "encrypted reporter profile", "human official-site stop boundary", "official preflight freshness gate", "markdown checklist"],
   }, null, 2));
 }
 

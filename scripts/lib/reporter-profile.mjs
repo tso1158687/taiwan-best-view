@@ -1,4 +1,12 @@
 import { readFile } from "node:fs/promises";
+import { createCipheriv, createDecipheriv, randomBytes, scrypt as scryptCallback } from "node:crypto";
+import { promisify } from "node:util";
+
+const scrypt = promisify(scryptCallback);
+const ENCRYPTED_REPORTER_PROFILE_KIND = "encrypted_reporter_profile";
+const ENCRYPTION_ALGORITHM = "aes-256-gcm";
+const KDF = "scrypt";
+const KEY_LENGTH = 32;
 
 export const REPORTER_PROFILE_FIELDS = [
   "identityType",
@@ -18,6 +26,16 @@ export const IDENTITY_TYPES = new Set(["national_id", "residence_permit", "passp
 
 function hasValue(value) {
   return String(value || "").trim().length > 0;
+}
+
+function requirePassphrase(passphrase) {
+  if (!hasValue(passphrase)) {
+    throw new Error("Encrypted reporter profile requires REPORTER_PROFILE_PASSPHRASE.");
+  }
+}
+
+async function deriveKey(passphrase, salt) {
+  return scrypt(passphrase, salt, KEY_LENGTH);
 }
 
 function validEmail(value) {
@@ -73,6 +91,52 @@ export function summarizeReporterProfile(profile) {
   };
 }
 
-export async function readReporterProfile(path) {
-  return JSON.parse(await readFile(path, "utf8"));
+export function isEncryptedReporterProfile(value) {
+  return value?.kind === ENCRYPTED_REPORTER_PROFILE_KIND;
+}
+
+export async function encryptReporterProfile(profile, passphrase) {
+  requirePassphrase(passphrase);
+  const salt = randomBytes(16);
+  const iv = randomBytes(12);
+  const key = await deriveKey(passphrase, salt);
+  const cipher = createCipheriv(ENCRYPTION_ALGORITHM, key, iv);
+  const plaintext = Buffer.from(JSON.stringify(profile), "utf8");
+  const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+
+  return {
+    schemaVersion: 1,
+    kind: ENCRYPTED_REPORTER_PROFILE_KIND,
+    algorithm: ENCRYPTION_ALGORITHM,
+    kdf: KDF,
+    salt: salt.toString("base64"),
+    iv: iv.toString("base64"),
+    authTag: cipher.getAuthTag().toString("base64"),
+    ciphertext: ciphertext.toString("base64"),
+  };
+}
+
+export async function decryptReporterProfile(envelope, passphrase) {
+  if (!isEncryptedReporterProfile(envelope)) {
+    return envelope;
+  }
+  requirePassphrase(passphrase);
+  if (envelope.algorithm !== ENCRYPTION_ALGORITHM || envelope.kdf !== KDF) {
+    throw new Error("Unsupported encrypted reporter profile format.");
+  }
+
+  const key = await deriveKey(passphrase, Buffer.from(envelope.salt || "", "base64"));
+  const decipher = createDecipheriv(ENCRYPTION_ALGORITHM, key, Buffer.from(envelope.iv || "", "base64"));
+  decipher.setAuthTag(Buffer.from(envelope.authTag || "", "base64"));
+  const plaintext = Buffer.concat([
+    decipher.update(Buffer.from(envelope.ciphertext || "", "base64")),
+    decipher.final(),
+  ]);
+
+  return JSON.parse(plaintext.toString("utf8"));
+}
+
+export async function readReporterProfile(path, options = {}) {
+  const profile = JSON.parse(await readFile(path, "utf8"));
+  return decryptReporterProfile(profile, options.passphrase ?? process.env.REPORTER_PROFILE_PASSPHRASE);
 }

@@ -26,7 +26,7 @@ async function main() {
     outputPath,
     status: "created",
     private: true,
-    nextStep: "Fill the JSON locally, then run npm run validate:reporter-profile -- <path>.",
+    nextStep: "Fill the JSON locally, validate it, then optionally encrypt it with npm run encrypt:reporter-profile -- <plain-path> <encrypted-path>.",
   }, null, 2));
 }
 
