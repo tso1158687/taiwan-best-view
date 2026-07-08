@@ -63,7 +63,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T173840`
+- `cases/case-20260708T174140`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -79,6 +79,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - UI fixture verification: `ok`
 - Case draft validation verification: `ok`, generated drafts pass and invalid fixture drafts fail with specific issues, including empty attachment drafts.
 - Empty attachment draft verification: `invalid`, drafts must include 1 to 5 submission attachments.
+- Oversized attachment draft verification: `invalid`, draft-level validation rejects attachments over the 80MB total limit.
 - Video attachment verification: `not_required`, New Taipei MP4 fixture accepted by official format rules, and video-only photo analysis skipped.
 - Draft created-at verification: `ok`, CLI and UI drafts preserve `createdAt` separately from `updatedAt`.
 - Review-state validation verification: `ok`, invalid `locationReview` and `fieldReview` fixtures fail with specific issues.

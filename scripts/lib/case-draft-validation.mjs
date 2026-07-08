@@ -1,3 +1,7 @@
+import { allowedAttachmentExtensionsFor } from "./metadata.mjs";
+
+const MAX_TOTAL_ATTACHMENT_BYTES = 80 * 1024 * 1024;
+
 const REQUIRED_DRAFT_FIELDS = [
   "jurisdiction",
   "violationType",
@@ -61,7 +65,7 @@ function addMissingFields({ target, fields, prefix, issues }) {
   }
 }
 
-function validateAttachment(attachment, index) {
+function validateAttachment(attachment, index, jurisdiction) {
   const issues = [];
   const prefix = `attachments.${index}`;
 
@@ -83,6 +87,13 @@ function validateAttachment(attachment, index) {
   }
   if (hasOwn(attachment, "acceptedByOfficial") && typeof attachment.acceptedByOfficial !== "boolean") {
     issues.push(`${prefix}.acceptedByOfficial.invalid_type`);
+  }
+  if (
+    typeof attachment.submissionExtension === "string"
+    && attachment.acceptedByOfficial === true
+    && allowedAttachmentExtensionsFor(jurisdiction).has(`.${attachment.submissionExtension.toLowerCase()}`) === false
+  ) {
+    issues.push(`${prefix}.acceptedByOfficial.inconsistent`);
   }
   if (hasOwn(attachment, "conversionStatus") && !VALID_CONVERSION_STATUSES.has(attachment.conversionStatus)) {
     issues.push(`${prefix}.conversionStatus.invalid`);
@@ -209,8 +220,10 @@ export function validateCaseDraft(draft) {
   } else if (Array.isArray(draft.attachments)) {
     if (draft.attachments.length < 1) issues.push("draft.attachments.empty");
     if (draft.attachments.length > 5) issues.push("draft.attachments.too_many");
+    const totalAttachmentBytes = draft.attachments.reduce((sum, attachment) => sum + (Number.isInteger(attachment?.size) ? attachment.size : 0), 0);
+    if (totalAttachmentBytes > MAX_TOTAL_ATTACHMENT_BYTES) issues.push("draft.attachments.too_large");
     draft.attachments.forEach((attachment, index) => {
-      issues.push(...validateAttachment(attachment, index));
+      issues.push(...validateAttachment(attachment, index, draft.jurisdiction));
     });
   }
   if (hasOwn(draft, "locationReview")) {

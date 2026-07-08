@@ -107,7 +107,18 @@ async function main() {
     attachments: [
       {
         ...draft.attachments[0],
+        submissionExtension: "exe",
+        acceptedByOfficial: true,
         conversionStatus: "mystery",
+      },
+    ],
+  });
+  const oversizedDraftValidation = validateCaseDraft({
+    ...draft,
+    attachments: [
+      {
+        ...draft.attachments[0],
+        size: 90 * 1024 * 1024,
       },
     ],
   });
@@ -121,6 +132,7 @@ async function main() {
   assert(invalidDraftValidation.status === "invalid", "Expected invalid draft fixture to fail validation.");
   assert(invalidDraftValidation.issues.includes("draft.jurisdiction.invalid"), "Expected invalid jurisdiction issue.");
   assert(invalidDraftValidation.issues.includes("draft.createdAt.invalid_type"), "Expected invalid createdAt issue.");
+  assert(invalidDraftValidation.issues.includes("attachments.0.acceptedByOfficial.inconsistent"), "Expected inconsistent official acceptance issue.");
   assert(invalidDraftValidation.issues.includes("attachments.0.conversionStatus.invalid"), "Expected invalid attachment conversion status issue.");
   assert(invalidDraftValidation.issues.includes("locationReview.status.invalid"), "Expected invalid location review status issue.");
   assert(invalidDraftValidation.issues.includes("locationReview.latitude.invalid_type"), "Expected invalid location review latitude issue.");
@@ -132,6 +144,8 @@ async function main() {
   assert(emptyAttachmentDraftValidation.status === "invalid", "Expected empty attachment draft fixture to fail validation.");
   assert(emptyAttachmentDraftValidation.issues.includes("draft.files.empty"), "Expected empty files issue.");
   assert(emptyAttachmentDraftValidation.issues.includes("draft.attachments.empty"), "Expected empty attachments issue.");
+  assert(oversizedDraftValidation.status === "invalid", "Expected oversized draft fixture to fail validation.");
+  assert(oversizedDraftValidation.issues.includes("draft.attachments.too_large"), "Expected oversized attachments issue.");
   const draftOnlyWorkflowChecklist = await createCaseWorkflowChecklist({ caseDirectory: report.caseDirectory });
   assert(draftOnlyWorkflowChecklist.draftValidation.status === "ok", "Expected workflow checklist to validate draft.");
   assert(draftOnlyWorkflowChecklist.statuses.submissionPacket === "missing", "Expected workflow checklist to report missing submission packet.");
@@ -415,6 +429,7 @@ async function main() {
     caseDraftValidationStatus: draftValidation.status,
     draftCreatedAtPresent: Boolean(draft.createdAt),
     emptyAttachmentDraftStatus: emptyAttachmentDraftValidation.status,
+    oversizedDraftStatus: oversizedDraftValidation.status,
     invalidDraftReviewIssueCount: invalidDraftValidation.issues.filter((issue) => issue.includes("Review")).length,
     caseReadinessStatus: readinessReport.status,
     caseReadinessCanOpenOfficialSite: readinessReport.canOpenOfficialSiteForHumanReview,
