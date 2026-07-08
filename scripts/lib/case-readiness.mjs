@@ -101,6 +101,53 @@ function summarizeAttachmentReadiness({ draft, packet }) {
   };
 }
 
+function summarizeOccurredAtReadiness({ draft, now = new Date() }) {
+  const occurredAt = draft.occurredAt || "";
+  if (!occurredAt) {
+    return {
+      status: "missing",
+      occurredAt,
+      ageDays: null,
+      note: "Violation time is missing and must be confirmed before official-site review.",
+    };
+  }
+
+  const occurredTime = new Date(occurredAt);
+  if (Number.isNaN(occurredTime.getTime())) {
+    return {
+      status: "invalid_time",
+      occurredAt,
+      ageDays: null,
+      note: "Violation time could not be parsed. Confirm and rewrite it before official-site review.",
+    };
+  }
+
+  const ageDays = Math.round(((now.getTime() - occurredTime.getTime()) / 864e5) * 10) / 10;
+  if (ageDays < 0) {
+    return {
+      status: "future_time",
+      occurredAt,
+      ageDays,
+      note: "Violation time is in the future. Confirm the timestamp before continuing.",
+    };
+  }
+  if (ageDays > 7) {
+    return {
+      status: "older_than_review_window",
+      occurredAt,
+      ageDays,
+      note: "Violation time is older than the local 7-day review window. Confirm timeliness before continuing.",
+    };
+  }
+
+  return {
+    status: "ready_for_human_review",
+    occurredAt,
+    ageDays,
+    note: "Violation time is within the local 7-day review window.",
+  };
+}
+
 function summarizeLocationReadiness(draft) {
   const assistance = draft.locationAssistance || {};
   const candidates = assistance.candidates || [];
@@ -169,7 +216,7 @@ function summarizePhotoAnalysisReadiness(draft) {
   };
 }
 
-function nextStepsForReport({ packet, reporterProfile, locationReadiness, officialPreflightReadiness }) {
+function nextStepsForReport({ packet, reporterProfile, occurredAtReadiness, locationReadiness, officialPreflightReadiness }) {
   const steps = [];
 
   if (packet.missing.length > 0) {
@@ -178,6 +225,10 @@ function nextStepsForReport({ packet, reporterProfile, locationReadiness, offici
 
   if (!reporterProfile) {
     steps.push("Create and validate a local reporter profile, or pass an existing ignored reporter profile to this review command.");
+  }
+
+  if (occurredAtReadiness.status !== "ready_for_human_review") {
+    steps.push("Review the violation timestamp and confirm the case is still timely before official-site entry.");
   }
 
   if (locationReadiness.status !== "candidate_adopted_needs_final_confirmation") {
@@ -201,6 +252,7 @@ export async function createCaseReadinessReport({ draft, reporterProfile = null,
   const caseMissing = packet.missing.filter((field) => field.startsWith("case.") || field === "attachments");
   const reporterMissing = packet.missing.filter((field) => field.startsWith("reporter."));
   const attachmentReadiness = summarizeAttachmentReadiness({ draft, packet });
+  const occurredAtReadiness = summarizeOccurredAtReadiness({ draft, now });
   const locationReadiness = summarizeLocationReadiness(draft);
   const photoAnalysisReadiness = summarizePhotoAnalysisReadiness(draft);
   const reporterSummary = summarizeReporterProfile(reporterProfile);
@@ -227,6 +279,10 @@ export async function createCaseReadinessReport({ draft, reporterProfile = null,
     {
       id: "attachments",
       ...attachmentReadiness,
+    },
+    {
+      id: "occurred_at",
+      ...occurredAtReadiness,
     },
     {
       id: "photo_analysis",
@@ -270,6 +326,6 @@ export async function createCaseReadinessReport({ draft, reporterProfile = null,
     reviewItems,
     manualBoundaries: packet.manualBoundaries,
     stopBefore: packet.official.stopBefore,
-    nextSteps: nextStepsForReport({ packet, reporterProfile, locationReadiness, officialPreflightReadiness }),
+    nextSteps: nextStepsForReport({ packet, reporterProfile, occurredAtReadiness, locationReadiness, officialPreflightReadiness }),
   };
 }

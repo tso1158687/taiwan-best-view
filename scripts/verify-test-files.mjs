@@ -187,6 +187,7 @@ async function main() {
   assert(readyReadinessReport.canOpenOfficialSiteForHumanReview === true, "Expected readiness gate to allow official-site opening only for human review.");
   assert(readyReadinessReport.finalSubmitAutomated === false, "Expected readiness gate to keep final submit manual.");
   assert(readyReadinessReport.officialPreflight.status === "ok", "Expected readiness gate to include fresh official preflight.");
+  assert(readyReadinessReport.reviewItems.some((item) => item.id === "occurred_at" && item.status === "older_than_review_window"), "Expected readiness gate to flag old violation time for review.");
   assert(readyReadinessReport.reviewItems.some((item) => item.id === "photo_analysis" && item.status === "candidate_confirmed_by_user"), "Expected field review to confirm photo analysis candidate.");
   const readyTaipeiPlan = createTaipeiAutomationPlan(readyPacket);
   const taipeiPrototypeWithoutReadiness = await createPrototypeRun({
@@ -369,6 +370,7 @@ async function main() {
     reviewedCaseReadinessStatus: readyReadinessReport.status,
     reviewedCaseReadinessCanOpenOfficialSite: readyReadinessReport.canOpenOfficialSiteForHumanReview,
     reviewedCaseReadinessOfficialPreflightStatus: readyReadinessReport.officialPreflight.status,
+    occurredAtReviewStatus: readyReadinessReport.reviewItems.find((item) => item.id === "occurred_at")?.status,
     reviewedFieldReviewStatus: readyReadinessReport.reviewItems.find((item) => item.id === "photo_analysis")?.status,
     taipeiPrototypeWithoutReadinessStatus: taipeiPrototypeWithoutReadiness.status,
     taipeiPrototypeWithReadinessStatus: taipeiPrototypeWithReadiness.status,

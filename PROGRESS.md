@@ -31,6 +31,7 @@ The project is published as a public GitHub repository:
 - Browser UI field suggestion adoption recorded as `fieldReview` for later readiness review.
 - Submission packet generation for Taipei and New Taipei.
 - Real-case readiness reports that gate official-site opening on complete local case and reporter data.
+- Readiness reports flag missing, future, or locally stale violation times for manual timeliness review.
 - Official preflight freshness gate in readiness reports and checklists.
 - Human-readable readiness Markdown checklists that omit reporter-profile values.
 - Local reporter profile validation, optional encrypted-at-rest storage, and submission-packet integration.
@@ -59,7 +60,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T171713`
+- `cases/case-20260708T172109`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -86,6 +87,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - Reviewed packet status with complete fixture-only case and reporter fields: `ready_for_human_review`
 - Case readiness gate with incomplete real-case fields: `needs_missing_data`, official-site opening blocked.
 - Case readiness gate with complete fixture-only case, reporter fields, and fresh official preflight: `ready_for_human_review`, official-site opening allowed for human review only.
+- Occurred-at freshness verification: `older_than_review_window`, timestamp risk is shown as a review warning.
 - Field review readiness verification: `candidate_confirmed_by_user`, adopted OCR/field suggestions are recorded for review.
 - Case readiness gate with complete local data but missing/stale official preflight: `needs_official_preflight`.
 - Guarded prototype gate with complete local data but missing readiness report: `blocked_by_readiness_report`.

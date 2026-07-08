@@ -15,6 +15,7 @@ Taiwan Best View is a local-first helper for preparing Taiwan traffic violation 
 - Records and reuses local confirmed frequent locations as review-only location candidates.
 - Builds submission packets for Taipei and New Taipei.
 - Reviews case readiness before opening official websites for human-reviewed submission.
+- Flags missing, future, or locally stale violation times in readiness reports for manual timeliness review.
 - Writes human-readable readiness checklists for official-site manual review.
 - Validates official-site selector manifests and guarded automation stop points.
 - Runs Playwright fixture fills locally without contacting official websites.

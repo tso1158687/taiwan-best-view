@@ -106,6 +106,8 @@ async function main() {
   assert(incompleteReport.missing.case.includes("case.plate"), "Expected missing plate to be reported.");
   assert(incompleteReport.missing.reporter.includes("reporter.name"), "Expected missing reporter profile fields.");
   assert(incompleteReport.reviewItems.some((item) => item.id === "attachments" && item.status === "needs_review"), "Expected sidecar metadata to require review.");
+  assert(incompleteReport.reviewItems.some((item) => item.id === "occurred_at" && item.status === "older_than_review_window"), "Expected old violation time to be flagged for review.");
+  assert(incompleteReport.nextSteps.some((step) => step.includes("timestamp")), "Expected timestamp review next step.");
   assert(incompleteReport.stopBefore.includes("final_submit"), "Expected final submit to remain a stop boundary.");
   assert(incompleteReport.canOpenOfficialSiteForHumanReview === false, "Expected incomplete case not to open official site.");
   assert(incompleteReport.officialPreflight.status === "not_provided", "Expected missing official preflight to be reported.");
@@ -186,7 +188,9 @@ async function main() {
   assert(readyReport.finalSubmitAutomated === false, "Expected final submit to remain manual.");
   assert(readyReport.reporterProfile.status === "ready", "Expected reporter profile summary to be ready.");
   assert(readyReport.officialPreflight.status === "ok", "Expected fresh official preflight to be ok.");
+  assert(readyReport.reviewItems.some((item) => item.id === "occurred_at" && item.status === "older_than_review_window"), "Expected ready report to keep timestamp freshness warning.");
   assert(readyReport.reviewItems.some((item) => item.id === "photo_analysis" && item.status === "candidate_confirmed_by_user"), "Expected confirmed field review to update photo analysis readiness.");
+  assert(readyMarkdown.includes("older_than_review_window"), "Expected markdown checklist to include timestamp freshness warning.");
   assert(readyMarkdown.includes("plate: 3999-YG"), "Expected markdown checklist to include confirmed field review.");
   assert(!JSON.stringify(readyReport.reporterProfile).includes("A123456789"), "Reporter summary must not expose identity number.");
   assert(readyReport.reviewItems.some((item) => item.id === "official_human_stops" && item.status === "human_required"), "Expected human stop review item.");
@@ -204,7 +208,8 @@ async function main() {
     stalePreflightStatus: stalePreflightReport.status,
     canOpenOfficialSiteForHumanReview: readyReport.canOpenOfficialSiteForHumanReview,
     finalSubmitAutomated: readyReport.finalSubmitAutomated,
-    verified: ["missing data gate", "reporter privacy summary", "encrypted reporter profile", "field review confirmation", "human official-site stop boundary", "official preflight freshness gate", "markdown checklist"],
+    occurredAtReviewStatus: readyReport.reviewItems.find((item) => item.id === "occurred_at")?.status,
+    verified: ["missing data gate", "reporter privacy summary", "encrypted reporter profile", "field review confirmation", "occurred-at freshness warning", "human official-site stop boundary", "official preflight freshness gate", "markdown checklist"],
   }, null, 2));
 }
 

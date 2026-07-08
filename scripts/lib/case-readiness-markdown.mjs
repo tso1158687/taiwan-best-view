@@ -25,6 +25,12 @@ function reviewItemSummary(item) {
   if (Array.isArray(item.stopBefore)) {
     lines.push("", "Stop before:", list(item.stopBefore));
   }
+  if (item.occurredAt) {
+    lines.push("", `Occurred at: ${item.occurredAt}`);
+  }
+  if (typeof item.ageDays === "number") {
+    lines.push("", `Age days: ${item.ageDays}`);
+  }
   if (typeof item.candidateCount === "number") {
     lines.push("", `Candidate count: ${item.candidateCount}`);
   }

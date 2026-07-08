@@ -153,6 +153,13 @@ async function main() {
         missing: ["case.plate"],
       },
       {
+        id: "occurred_at",
+        status: "older_than_review_window",
+        occurredAt: "2026-06-12T15:32:11+08:00",
+        ageDays: 26.4,
+        note: "Fixture timestamp warning.",
+      },
+      {
         id: "official_human_stops",
         status: "human_required",
         stopBefore: ["final_submit"],
@@ -348,6 +355,8 @@ async function main() {
     assert(readinessText.includes("case-readiness-ui-fixture"), "Expected readiness report case id to render.");
     assert(readinessText.includes("需補資料"), "Expected readiness status to render.");
     assert(readinessText.includes("case.plate"), "Expected readiness missing case field to render.");
+    assert(readinessText.includes("occurred_at"), "Expected readiness review item to render.");
+    assert(readinessText.includes("時間需確認"), "Expected occurred-at review warning to render.");
     assert(readinessText.includes("final_submit"), "Expected readiness human stop to render.");
 
     await importWorkflowJson(page, workflowPath);

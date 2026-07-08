@@ -440,6 +440,10 @@ function formatRecordStatus(status) {
     needs_official_preflight: "需重跑官方檢查",
     blocked_by_missing_data: "缺少資料，已停止",
     submitted_by_user: "使用者已手動送件",
+    older_than_review_window: "時間需確認",
+    future_time: "未來時間",
+    invalid_time: "時間格式錯誤",
+    candidate_confirmed_by_user: "候選已人工確認",
     none: "無補正",
     needs_action: "需補正",
   };
@@ -575,6 +579,28 @@ function renderReadinessView(view) {
   appendValueList(details, "人工停止點", view.stopBefore || []);
   summary.append(title, details);
   readinessList.append(summary);
+
+  const reviewItems = view.reviewItems || [];
+  if (reviewItems.length > 0) {
+    const reviewCard = document.createElement("article");
+    const reviewTitle = document.createElement("div");
+    const reviewDetails = document.createElement("div");
+
+    reviewCard.className = "case-record-card";
+    reviewTitle.className = "case-record-title";
+    reviewTitle.textContent = "審核項目";
+    reviewDetails.className = "case-record-details";
+    for (const item of reviewItems) {
+      const parts = [formatRecordStatus(item.status)];
+      if (typeof item.ageDays === "number") parts.push(`${item.ageDays} 天`);
+      if (Array.isArray(item.missing) && item.missing.length > 0) parts.push(`缺 ${item.missing.length} 項`);
+      if (Array.isArray(item.issues) && item.issues.length > 0) parts.push(`問題 ${item.issues.length} 項`);
+      if (Array.isArray(item.confirmedFields) && item.confirmedFields.length > 0) parts.push(`已確認 ${item.confirmedFields.length} 欄`);
+      reviewDetails.append(createDetail(item.id, parts.join("，")));
+    }
+    reviewCard.append(reviewTitle, reviewDetails);
+    readinessList.append(reviewCard);
+  }
 
   const nextSteps = view.nextSteps || [];
   if (nextSteps.length > 0) {
