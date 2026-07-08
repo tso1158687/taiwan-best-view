@@ -17,7 +17,7 @@ Taiwan Best View is a local-first helper for preparing Taiwan traffic violation 
 - Validates official-site selector manifests and guarded automation stop points.
 - Runs Playwright fixture fills locally without contacting official websites.
 - Records local case status, official case number, lookup password, and correction status after manual submission.
-- Imports local case records and case-history JSON into the browser UI for review.
+- Imports case-readiness reports, local case records, and case-history JSON into the browser UI for review.
 - Validates local reporter profiles without printing personal data values.
 
 ## Safety Boundaries
@@ -85,7 +85,7 @@ npm run review:case -- cases/<case-id>/draft.json
 npm run review:case -- cases/<case-id>/draft.json reporter-profile.local.json
 ```
 
-This writes `case-readiness-report.json` next to the draft. It reports missing case fields, reporter-profile readiness, attachment and metadata review notes, official human stop points, and the next safe commands. It does not contact official websites.
+This writes `case-readiness-report.json` next to the draft. It reports missing case fields, reporter-profile readiness, attachment and metadata review notes, official human stop points, and the next safe commands. It does not contact official websites. You can import the report with the browser UI's `匯入 JSON` button.
 
 Record a confirmed frequent location after you have reviewed a draft:
 

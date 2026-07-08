@@ -481,6 +481,24 @@ textarea:focus {
   overflow-wrap: anywhere;
 }
 
+.span-detail {
+  grid-column: 1 / -1;
+}
+
+.readiness-steps {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 22px;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.readiness-steps li {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 980px) {
   .workspace {
     grid-template-columns: 1fr;

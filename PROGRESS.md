@@ -36,7 +36,7 @@ The project is published as a public GitHub repository:
 - Read-only live official-site preflight scripts.
 - Local Playwright fixture fill verification without contacting official websites.
 - Local case record creation, update, and case-history summary.
-- Browser UI import for `case-record.json` and `case-history.json`.
+- Browser UI import for `case-readiness-report.json`, `case-record.json`, and `case-history.json`.
 - Metadata tooling diagnostics for QuickLook and optional exiftool embedding.
 - Public handoff documentation in `README.md` and detailed audit notes in `SELF_AUDIT.md`.
 
@@ -56,7 +56,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T161302`
+- `cases/case-20260708T161922`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -70,6 +70,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - Taipei local fixture fill: `ok`, 15 fields filled, 2 attachments uploaded, no final submit.
 - New Taipei local fixture fill: `ok`, 19 fields filled, 2 attachments uploaded, no final submit.
 - UI fixture verification: `ok`
+- Case readiness report UI import verification: `ok`
 - Location candidate confirmation UI verification: `ok`
 - Confirmed frequent-location candidate verification: `ok`
 - Reporter-profile fixture status: `ready`

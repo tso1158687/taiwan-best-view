@@ -52,6 +52,9 @@ const suggestionsState = document.querySelector("#suggestionsState");
 const caseRecordPanel = document.querySelector("#caseRecordPanel");
 const caseRecordList = document.querySelector("#caseRecordList");
 const caseRecordState = document.querySelector("#caseRecordState");
+const readinessPanel = document.querySelector("#readinessPanel");
+const readinessList = document.querySelector("#readinessList");
+const readinessState = document.querySelector("#readinessState");
 const saveState = document.querySelector("#saveState");
 const validationState = document.querySelector("#validationState");
 const downloadButton = document.querySelector("#downloadButton");
@@ -64,6 +67,7 @@ let importedPhotoAnalysis = null;
 let importedFieldSuggestions = null;
 let importedLocationReview = null;
 let importedCaseRecordView = null;
+let importedReadinessView = null;
 
 function toTaiwanIsoString(datetimeLocalValue) {
   if (!datetimeLocalValue) return "";
@@ -251,11 +255,21 @@ function renderFiles() {
 function renderPreview() {
   const draft = createCaseDraft();
   const errors = validateDraft(draft);
-  jsonPreview.textContent = JSON.stringify(importedCaseRecordView || draft, null, 2);
+  const importedView = importedReadinessView || importedCaseRecordView;
+  jsonPreview.textContent = JSON.stringify(importedView || draft, null, 2);
   renderLocationAssistance(draft.locationAssistance);
   renderPhotoAnalysis(draft.photoAnalysis);
   renderFieldSuggestions(draft.fieldSuggestions);
   renderCaseRecordView(importedCaseRecordView);
+  renderReadinessView(importedReadinessView);
+
+  if (importedReadinessView) {
+    validationState.textContent = "送件檢查";
+    validationState.className = importedReadinessView.canOpenOfficialSiteForHumanReview
+      ? "status-pill"
+      : "status-pill warning";
+    return;
+  }
 
   if (importedCaseRecordView) {
     validationState.textContent = "紀錄檢視";
@@ -412,6 +426,16 @@ function isCaseHistory(value) {
   return Boolean(value && Array.isArray(value.cases));
 }
 
+function isCaseReadinessReport(value) {
+  return Boolean(
+    value &&
+      Array.isArray(value.reviewItems) &&
+      value.missing &&
+      Array.isArray(value.stopBefore) &&
+      Object.prototype.hasOwnProperty.call(value, "canOpenOfficialSiteForHumanReview")
+  );
+}
+
 function createDetail(label, value) {
   const item = document.createElement("div");
   const title = document.createElement("span");
@@ -422,6 +446,19 @@ function createDetail(label, value) {
   content.textContent = value || "未填";
   item.append(title, content);
   return item;
+}
+
+function appendValueList(parent, label, values) {
+  const item = document.createElement("div");
+  const title = document.createElement("span");
+  const content = document.createElement("strong");
+  const list = Array.isArray(values) ? values.filter(Boolean) : [];
+
+  item.className = "case-record-detail span-detail";
+  title.textContent = label;
+  content.textContent = list.length > 0 ? list.join("、") : "無";
+  item.append(title, content);
+  parent.append(item);
 }
 
 function appendCaseRecordCard(record, titleText) {
@@ -453,6 +490,62 @@ function appendCaseRecordCard(record, titleText) {
 
   card.append(title, details);
   caseRecordList.append(card);
+}
+
+function renderReadinessView(view) {
+  readinessList.textContent = "";
+
+  if (!view) {
+    readinessPanel.hidden = true;
+    return;
+  }
+
+  readinessPanel.hidden = false;
+  readinessState.textContent = view.canOpenOfficialSiteForHumanReview ? "可人工審核" : "需補資料";
+  readinessState.className = view.canOpenOfficialSiteForHumanReview ? "status-pill" : "status-pill warning";
+
+  const summary = document.createElement("article");
+  const title = document.createElement("div");
+  const details = document.createElement("div");
+  const missing = view.missing || {};
+
+  summary.className = "case-record-card";
+  title.className = "case-record-title";
+  title.textContent = view.caseId || "送件檢查報告";
+  details.className = "case-record-details";
+  details.append(
+    createDetail("縣市", formatJurisdiction(view.jurisdiction)),
+    createDetail("狀態", formatRecordStatus(view.status)),
+    createDetail("官方網站", view.officialUrl || ""),
+    createDetail("可開官方審核", view.canOpenOfficialSiteForHumanReview ? "是" : "否"),
+    createDetail("最後送出自動化", view.finalSubmitAutomated ? "是" : "否")
+  );
+  appendValueList(details, "案件缺漏", missing.case || []);
+  appendValueList(details, "檢舉人缺漏", missing.reporter || []);
+  appendValueList(details, "人工停止點", view.stopBefore || []);
+  summary.append(title, details);
+  readinessList.append(summary);
+
+  const nextSteps = view.nextSteps || [];
+  if (nextSteps.length > 0) {
+    const stepsCard = document.createElement("article");
+    const stepsTitle = document.createElement("div");
+    const steps = document.createElement("ol");
+
+    stepsCard.className = "case-record-card";
+    stepsTitle.className = "case-record-title";
+    stepsTitle.textContent = "下一步";
+    steps.className = "readiness-steps";
+
+    for (const step of nextSteps) {
+      const item = document.createElement("li");
+      item.textContent = step;
+      steps.append(item);
+    }
+
+    stepsCard.append(stepsTitle, steps);
+    readinessList.append(stepsCard);
+  }
 }
 
 function renderCaseRecordView(view) {
@@ -669,13 +762,34 @@ function applyDraftToForm(draft) {
   importedPhotoAnalysis = draft.photoAnalysis || null;
   importedFieldSuggestions = draft.fieldSuggestions || null;
   importedCaseRecordView = null;
+  importedReadinessView = null;
   selectedFiles = [];
   fileInput.value = "";
   renderFiles();
 }
 
+function clearImportedDraftEvidence() {
+  importedAttachments = [];
+  importedLocationAssistance = null;
+  importedLocationReview = null;
+  importedPhotoAnalysis = null;
+  importedFieldSuggestions = null;
+}
+
 function importCaseRecordView(view) {
   importedCaseRecordView = view;
+  importedReadinessView = null;
+  clearImportedDraftEvidence();
+  selectedFiles = [];
+  fileInput.value = "";
+  renderFiles();
+  renderPreview();
+}
+
+function importReadinessView(view) {
+  importedReadinessView = view;
+  importedCaseRecordView = null;
+  clearImportedDraftEvidence();
   selectedFiles = [];
   fileInput.value = "";
   renderFiles();
@@ -687,7 +801,10 @@ async function importDraft(file) {
 
   try {
     const payload = JSON.parse(await file.text());
-    if (isCaseRecord(payload) || isCaseHistory(payload)) {
+    if (isCaseReadinessReport(payload)) {
+      importReadinessView(payload);
+      saveState.textContent = "已匯入送件檢查";
+    } else if (isCaseRecord(payload) || isCaseHistory(payload)) {
       importCaseRecordView(payload);
       saveState.textContent = isCaseHistory(payload) ? "已匯入案件歷史" : "已匯入案件紀錄";
     } else {
@@ -733,6 +850,7 @@ function resetDraft() {
   importedPhotoAnalysis = null;
   importedFieldSuggestions = null;
   importedCaseRecordView = null;
+  importedReadinessView = null;
   fileInput.value = "";
   localStorage.removeItem(STORAGE_KEY);
   renderFiles();
@@ -748,6 +866,7 @@ fileInput.addEventListener("change", () => {
   importedPhotoAnalysis = null;
   importedFieldSuggestions = null;
   importedCaseRecordView = null;
+  importedReadinessView = null;
   renderFiles();
   handleInputChange();
 });

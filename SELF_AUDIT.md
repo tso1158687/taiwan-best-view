@@ -43,6 +43,7 @@ Observed output:
 - Verified local case-record update and case-summary logic for post-submission official case numbers
 - Verified reporter-profile validation and review-ready packet generation with fixture-only reporter data
 - Verified real-case readiness reports for missing-data and review-ready states
+- Verified browser UI import for `case-readiness-report.json`
 - Verified metadata tooling diagnostics for QuickLook plus optional exiftool embedding
 - Verified browser UI location candidate adoption into `locationReview`
 - Verified browser UI confirmed-location candidate adoption into `locationReview`
@@ -74,8 +75,10 @@ Evidence:
 - JSON preview and JSON download exist
 - JSON import exists
 - Browser UI imports `case-record.json` and `case-history.json` for local case review
+- Browser UI imports `case-readiness-report.json` for pre-official-site readiness review
 - HEIC/HEIF upload is detected and shown as requiring conversion to an official-site-compatible format
 - Playwright UI fixture verification imports both single-case and case-history JSON files
+- Playwright UI fixture verification imports case-readiness reports
 
 Remaining:
 
@@ -152,6 +155,7 @@ Evidence:
 
 - `scripts/prepare-submission.mjs` generates `submission-packet.json` from a case draft
 - `scripts/review-case-readiness.mjs` generates `case-readiness-report.json` from a case draft and optional reporter profile without contacting official sites
+- Browser UI can import and display `case-readiness-report.json`, including missing fields, official human stop points, and next steps
 - The Taipei packet points to `https://prsweb.tcpd.gov.tw/`
 - The packet maps case date/time, plate parts, district, road, address note, fact, description, and attachments into a stable structure for automation
 - The packet explicitly stops before Email verification, personal-data statements, truthfulness statement, and final submit
@@ -225,6 +229,7 @@ Evidence:
 - Verification confirmed `caseRecordStatus: "needs_missing_data"`, `updatedCaseRecordStatus: "submitted_by_user"`, `caseSummaryOfficialCaseNumber: "TP-FIXTURE-0001"`, and preserved final-submit as a human stop
 - `index.html` / `app.js` import `case-record.json` and `case-history.json` and display jurisdiction, local/submission/automation status, official case number, submitted time, attachment count, missing count, and human stop count
 - `scripts/verify-ui-fixtures.mjs` verifies browser import rendering for single case record and case history fixtures
+- `scripts/verify-ui-fixtures.mjs` verifies browser import rendering for case-readiness reports
 - File-level check wrote `cases/case-20260616T160849/case-record.json` with `TP-FIXTURE-0001` and generated `cases/case-history.json` containing 6 local case summaries
 
 Remaining:
@@ -274,4 +279,4 @@ node scripts/convert-heic.mjs test-files /tmp/taiwan-best-view-converted-2
 find cases/case-20260616T024545/converted -maxdepth 1 -type f -exec file {} \;
 ```
 
-All listed commands completed successfully by the 2026-07-09 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260708T161302`; the latest plate verification returned normalized candidates `3999-YG` and `3999-B` with patterns `four_digits_two_letters` and `four_digits_one_letter_incomplete`; the latest readiness verification returned `caseReadinessStatus: "needs_missing_data"`, `caseReadinessCanOpenOfficialSite: false`, `reviewedCaseReadinessStatus: "ready_for_human_review"`, and `reviewedCaseReadinessCanOpenOfficialSite: true`; the latest confirmed-location verification returned one matched frequent-location candidate by GPS distance and OCR text, and UI verification covers confirmed-location candidate confirmation; the latest reporter-profile fixture verification returned `reviewedPacketStatus: "ready_for_human_review"` and `reporterProfileSummaryStatus: "ready"`; the latest metadata verification returned `metadataEmbeddingStatuses: ["sidecar_only", "sidecar_only"]`; the latest UI fixture verification returned `uiFixtureVerification: "ok"` and covers location candidate confirmation; the latest live official preflight reports were written to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json` with `status: "ok"`.
+All listed commands completed successfully by the 2026-07-09 audit, except where older case IDs are retained as prior evidence. The latest end-to-end verifier used `cases/case-20260708T161922`; the latest plate verification returned normalized candidates `3999-YG` and `3999-B` with patterns `four_digits_two_letters` and `four_digits_one_letter_incomplete`; the latest readiness verification returned `caseReadinessStatus: "needs_missing_data"`, `caseReadinessCanOpenOfficialSite: false`, `reviewedCaseReadinessStatus: "ready_for_human_review"`, and `reviewedCaseReadinessCanOpenOfficialSite: true`; the latest confirmed-location verification returned one matched frequent-location candidate by GPS distance and OCR text, and UI verification covers confirmed-location candidate confirmation; the latest reporter-profile fixture verification returned `reviewedPacketStatus: "ready_for_human_review"` and `reporterProfileSummaryStatus: "ready"`; the latest metadata verification returned `metadataEmbeddingStatuses: ["sidecar_only", "sidecar_only"]`; the latest UI fixture verification returned `uiFixtureVerification: "ok"` and covers case-readiness import, location candidate confirmation, and confirmed-location candidate confirmation; the latest live official preflight reports were written to `cases/taipei-live-preflight.json` and `cases/new-taipei-live-preflight.json` with `status: "ok"`.

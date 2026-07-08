@@ -19,6 +19,14 @@ async function importJson(page, path) {
   });
 }
 
+async function importReadinessJson(page, path) {
+  await page.locator("#importInput").setInputFiles(path);
+  await page.waitForFunction(() => {
+    const panel = document.querySelector("#readinessPanel");
+    return panel && panel.hidden === false;
+  });
+}
+
 async function importDraftJson(page, path, expectedText = "locationAssistance") {
   await page.locator("#importInput").setInputFiles(path);
   await page.waitForFunction((text) => {
@@ -36,6 +44,7 @@ async function main() {
   const fixtureDir = await mkdtemp(join(tmpdir(), "taiwan-best-view-ui-"));
   const recordPath = join(fixtureDir, "case-record.json");
   const historyPath = join(fixtureDir, "case-history.json");
+  const readinessPath = join(fixtureDir, "case-readiness-report.json");
   const draftPath = join(fixtureDir, "draft-with-location.json");
   const confirmedLocationDraftPath = join(fixtureDir, "draft-with-confirmed-location.json");
   const caseRecord = {
@@ -96,6 +105,46 @@ async function main() {
         missingCount: 3,
         requiredHumanStopCount: 4,
       },
+    ],
+  };
+  const readinessReport = {
+    generatedAt: "2026-07-09T00:00:00.000Z",
+    draftPath: "/tmp/draft.json",
+    caseId: "case-readiness-ui-fixture",
+    jurisdiction: "taipei",
+    officialUrl: "https://prsweb.tcpd.gov.tw/",
+    status: "needs_missing_data",
+    canOpenOfficialSiteForHumanReview: false,
+    finalSubmitAutomated: false,
+    missing: {
+      all: ["case.plate", "reporter.name"],
+      case: ["case.plate"],
+      reporter: ["reporter.name"],
+    },
+    reporterProfile: {
+      status: "needs_missing_data",
+      missing: ["reporter.name"],
+      invalid: [],
+      optionalMissing: [],
+      presentFields: [],
+    },
+    reviewItems: [
+      {
+        id: "case_required_fields",
+        status: "needs_missing_data",
+        missing: ["case.plate"],
+      },
+      {
+        id: "official_human_stops",
+        status: "human_required",
+        stopBefore: ["final_submit"],
+      },
+    ],
+    manualBoundaries: ["Automation must stop before any final submit action."],
+    stopBefore: ["final_submit"],
+    nextSteps: [
+      "Fill or confirm missing fields: case.plate, reporter.name",
+      "Complete CAPTCHA, Email verification, declarations, pre-submit review, and final submit manually.",
     ],
   };
   const draftWithLocation = {
@@ -179,6 +228,7 @@ async function main() {
 
   await writeFile(recordPath, `${JSON.stringify(caseRecord, null, 2)}\n`);
   await writeFile(historyPath, `${JSON.stringify(caseHistory, null, 2)}\n`);
+  await writeFile(readinessPath, `${JSON.stringify(readinessReport, null, 2)}\n`);
   await writeFile(draftPath, `${JSON.stringify(draftWithLocation, null, 2)}\n`);
   await writeFile(confirmedLocationDraftPath, `${JSON.stringify(draftWithConfirmedLocation, null, 2)}\n`);
 
@@ -196,6 +246,13 @@ async function main() {
     const historyText = await visibleText(page, "#caseRecordPanel");
     assert(historyText.includes("2 筆案件"), "Expected case history count to render.");
     assert(historyText.includes("case-ui-draft"), "Expected second history item to render.");
+
+    await importReadinessJson(page, readinessPath);
+    const readinessText = await visibleText(page, "#readinessPanel");
+    assert(readinessText.includes("case-readiness-ui-fixture"), "Expected readiness report case id to render.");
+    assert(readinessText.includes("需補資料"), "Expected readiness status to render.");
+    assert(readinessText.includes("case.plate"), "Expected readiness missing case field to render.");
+    assert(readinessText.includes("final_submit"), "Expected readiness human stop to render.");
 
     await importDraftJson(page, draftPath, "25.022475");
     await page.getByRole("button", { name: "採用候選" }).click();
@@ -219,7 +276,7 @@ async function main() {
 
   console.log(JSON.stringify({
     ok: true,
-    verified: ["case-record import", "case-history import", "location candidate confirmation", "confirmed location candidate confirmation"],
+    verified: ["case-record import", "case-history import", "case-readiness import", "location candidate confirmation", "confirmed location candidate confirmation"],
   }, null, 2));
 }
 
