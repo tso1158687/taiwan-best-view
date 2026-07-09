@@ -201,6 +201,8 @@ Confirmed frequent-location verification:
 npm run verify:locations
 ```
 
+For requirement-by-requirement MVP completion evidence, see `MVP_COMPLETION_AUDIT.md`.
+
 ## Current Limits
 
 - The generated PNG submission files are visually rendered and metadata is preserved in draft sidecar data.

@@ -9,7 +9,7 @@ The project is published as a public GitHub repository:
 - Repository: https://github.com/tso1158687/taiwan-best-view
 - Default branch: `main`
 - Progress baseline before reporter-profile and metadata-tooling work: `cb63e72 Record current project progress`
-- Local branch status at the time of this update: `main...origin/main` before the current work is committed
+- Local branch status at the time of this update: `main...origin/main`, clean except ignored local folders and machine files
 
 `test-files/`, `cases/`, `node_modules/`, reporter-profile local files, and `.DS_Store` are intentionally ignored and should not be committed because they may contain real evidence photos, generated case data, personal data, dependencies, or local machine files.
 
@@ -47,6 +47,7 @@ The project is published as a public GitHub repository:
 - Browser UI import for `case-readiness-report.json`, `case-workflow-checklist.json`, `case-record.json`, and `case-history.json`, including lookup-password stored status without exposing the value.
 - Metadata tooling diagnostics for QuickLook and optional exiftool embedding.
 - Public handoff documentation in `README.md` and detailed audit notes in `SELF_AUDIT.md`.
+- MVP completion traceability in `MVP_COMPLETION_AUDIT.md`.
 
 ## Latest Verified Evidence
 
