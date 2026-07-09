@@ -1,4 +1,4 @@
-import { summarizeCorrection } from "./case-records.mjs";
+import { officialReceiptStatus, summarizeCorrection } from "./case-records.mjs";
 
 function valueOrDash(value) {
   return value ? String(value) : "-";
@@ -41,6 +41,7 @@ export function formatCaseRecordMarkdown(record) {
     "",
     "## Official Receipt",
     "",
+    `- Receipt status: ${officialReceiptStatus(record)}`,
     `- Official URL: ${valueOrDash(official.url)}`,
     `- Case number: ${valueOrDash(official.caseNumber)}`,
     `- Submitted at: ${valueOrDash(official.submittedAt)}`,

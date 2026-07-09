@@ -188,7 +188,9 @@ async function main() {
       readinessReport: "ready_for_human_review",
       canOpenOfficialSiteForHumanReview: true,
       caseRecord: "submitted_by_user",
+      officialReceipt: "recorded",
       automation: "ready_until_email_verification",
+      planFixture: "present",
     },
     artifacts: [
       {
@@ -413,6 +415,7 @@ async function main() {
     const workflowText = await visibleText(page, "#workflowPanel");
     assert(workflowText.includes("case-ui-fixture"), "Expected workflow checklist case id to render.");
     assert(workflowText.includes("可接續"), "Expected workflow checklist state to render.");
+    assert(workflowText.includes("已記錄"), "Expected workflow official receipt status to render.");
     assert(workflowText.includes("Case record summary"), "Expected workflow artifact to render.");
     assert(workflowText.includes("Taipei plan fixture report"), "Expected plan fixture artifact to render.");
     assert(workflowText.includes("缺少"), "Expected missing workflow artifact status to render.");

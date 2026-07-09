@@ -408,6 +408,10 @@ async function main() {
   assert(caseRecord.official.caseNumber === "", "Expected official case number to remain manually filled.");
   assert(caseRecord.requiredHumanStops.includes("review_pre_submit_summary"), "Expected case record to keep pre-submit review stop.");
   assert(caseRecord.requiredHumanStops.includes("stop_before_final_submit"), "Expected case record to keep final submit stop.");
+  const incompleteReceiptRecord = updateCaseRecord(caseRecord, {
+    localStatus: "submitted",
+    submissionStatus: "submitted_by_user",
+  });
   const submittedRecord = updateCaseRecord(caseRecord, {
     localStatus: "submitted",
     submissionStatus: "submitted_by_user",
@@ -438,9 +442,16 @@ async function main() {
   assert(needsPlanFixtureWorkflowChecklist.nextAction.id === "verify_guarded_plan_fixture", "Expected workflow checklist to require the plan fixture before official-site handoff.");
   assert(needsPlanFixtureWorkflowChecklist.nextAction.command.includes("fixture:plan"), "Expected workflow checklist plan-fixture command.");
   await writeFile(join(report.caseDirectory, "taipei-plan-fixture-report.json"), `${JSON.stringify(taipeiPlanFixture, null, 2)}\n`);
+  await writeFile(join(report.caseDirectory, "case-record.json"), `${JSON.stringify(incompleteReceiptRecord, null, 2)}\n`);
+  const needsReceiptWorkflowChecklist = await createCaseWorkflowChecklist({ caseDirectory: report.caseDirectory });
+  assert(needsReceiptWorkflowChecklist.statuses.officialReceipt === "needs_receipt_details", "Expected workflow checklist to flag missing official receipt details.");
+  assert(needsReceiptWorkflowChecklist.nextAction.id === "complete_official_receipt", "Expected workflow checklist to require official receipt completion.");
+  assert(needsReceiptWorkflowChecklist.nextAction.command.includes("--case-number"), "Expected workflow checklist receipt command to include case number.");
+  await writeFile(join(report.caseDirectory, "case-record.json"), `${JSON.stringify(submittedRecord, null, 2)}\n`);
   await writeFile(join(report.caseDirectory, "case-record-summary.md"), caseRecordMarkdown);
   const completeWorkflowChecklist = await createCaseWorkflowChecklist({ caseDirectory: report.caseDirectory });
   assert(caseSummary.officialCaseNumber === "TP-FIXTURE-0001", "Expected case summary to include official case number.");
+  assert(caseSummary.officialReceiptStatus === "recorded", "Expected case summary to mark official receipt as recorded.");
   assert(caseSummary.lookupPasswordStored === true, "Expected case summary to report lookup password presence without exposing the value.");
   assert(caseSummary.submissionStatus === "submitted_by_user", "Expected case summary to include updated submission status.");
   assert(caseSummary.correctionStatus === "needs_action", "Expected case summary to include correction status.");
@@ -449,6 +460,7 @@ async function main() {
   assert(preservedCorrectionSummary.correctionItemCount === 2, "Expected correction items to be preserved when updating unrelated official fields.");
   assert(caseRecordMarkdown.includes("# Case Record Summary"), "Expected case record Markdown title.");
   assert(caseRecordMarkdown.includes("TP-FIXTURE-0001"), "Expected case record Markdown to include official case number.");
+  assert(caseRecordMarkdown.includes("Receipt status: recorded"), "Expected case record Markdown to include receipt status.");
   assert(caseRecordMarkdown.includes("補上更清楚的車牌照片"), "Expected case record Markdown to include correction item.");
   assert(caseRecordMarkdown.includes("2026-06-20T23:59:59+08:00"), "Expected case record Markdown to include correction due time.");
   assert(caseRecordMarkdown.includes("Lookup password stored in JSON: yes"), "Expected case record Markdown to report lookup password presence.");
@@ -456,6 +468,7 @@ async function main() {
   assert(completeWorkflowChecklist.statuses.submissionPacket === "ready_for_human_review", "Expected workflow checklist to read ready submission packet.");
   assert(completeWorkflowChecklist.statuses.readinessReport === "ready_for_human_review", "Expected workflow checklist to read ready readiness report.");
   assert(completeWorkflowChecklist.statuses.caseRecord === "submitted_by_user", "Expected workflow checklist to read submitted case record.");
+  assert(completeWorkflowChecklist.statuses.officialReceipt === "recorded", "Expected workflow checklist to read recorded official receipt.");
   assert(completeWorkflowChecklist.statuses.planFixture === "present", "Expected workflow checklist to require the plan fixture report.");
   assert(completeWorkflowChecklist.artifacts.every((artifact) => artifact.status === "present"), "Expected workflow checklist fixture to have all local artifacts.");
   assert(completeWorkflowChecklist.nextAction.id === "workflow_complete", "Expected workflow checklist to report local workflow completion.");
@@ -531,11 +544,13 @@ async function main() {
     caseRecordStatus: caseRecord.submissionStatus,
     updatedCaseRecordStatus: submittedRecord.submissionStatus,
     caseSummaryOfficialCaseNumber: caseSummary.officialCaseNumber,
+    caseSummaryOfficialReceiptStatus: caseSummary.officialReceiptStatus,
     caseSummaryLookupPasswordStored: caseSummary.lookupPasswordStored,
     caseCorrectionStatus: caseSummary.correctionStatus,
     caseCorrectionItemCount: caseSummary.correctionItemCount,
     caseRecordMarkdownVerification: "ok",
     workflowChecklistVerification: completeWorkflowChecklist.statuses.caseRecord,
+    workflowOfficialReceiptStatus: completeWorkflowChecklist.statuses.officialReceipt,
     workflowPlanFixtureStatus: completeWorkflowChecklist.statuses.planFixture,
     workflowNextAction: completeWorkflowChecklist.nextAction.id,
     uiFixtureVerification: "ok",

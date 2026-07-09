@@ -37,6 +37,18 @@ export function summarizeCorrection(record) {
   };
 }
 
+export function officialReceiptStatus(record) {
+  if (record.submissionStatus !== "submitted_by_user") {
+    return "not_submitted";
+  }
+
+  const missing = [];
+  if (!String(record.official?.caseNumber || "").trim()) missing.push("official.caseNumber");
+  if (!String(record.official?.submittedAt || "").trim()) missing.push("official.submittedAt");
+
+  return missing.length === 0 ? "recorded" : "needs_receipt_details";
+}
+
 export function createCaseRecord({ draft, submissionPacket = null, automationPlan = null }) {
   return {
     schemaVersion: 1,
@@ -108,6 +120,7 @@ export function summarizeCaseRecord(record, caseDirectory = "") {
     submissionStatus: record.submissionStatus || "",
     automationStatus: record.automationStatus || "",
     officialCaseNumber: record.official?.caseNumber || "",
+    officialReceiptStatus: officialReceiptStatus(record),
     lookupPasswordStored: Boolean(record.official?.lookupPassword),
     submittedAt: record.official?.submittedAt || "",
     correctionStatus: correction.status,

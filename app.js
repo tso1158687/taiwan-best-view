@@ -476,6 +476,11 @@ function formatRecordStatus(status) {
     future_time: "未來時間",
     invalid_time: "時間格式錯誤",
     candidate_confirmed_by_user: "候選已人工確認",
+    recorded: "已記錄",
+    needs_receipt_details: "需補官方收據",
+    not_submitted: "尚未送件",
+    present: "已產生",
+    missing: "缺少",
     none: "無補正",
     needs_action: "需補正",
   };
@@ -686,6 +691,8 @@ function renderWorkflowView(view) {
     createDetail("送件檢查", formatRecordStatus(view.statuses?.readinessReport)),
     createDetail("可開官方審核", view.statuses?.canOpenOfficialSiteForHumanReview ? "是" : "否"),
     createDetail("案件紀錄", formatRecordStatus(view.statuses?.caseRecord)),
+    createDetail("官方收據", formatRecordStatus(view.statuses?.officialReceipt)),
+    createDetail("Plan fixture", formatRecordStatus(view.statuses?.planFixture)),
     createDetail("自動化", formatRecordStatus(view.statuses?.automation))
   );
   summary.append(title, details);

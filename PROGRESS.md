@@ -64,7 +64,7 @@ The latest full local verification recorded in `SELF_AUDIT.md` used:
 
 Latest end-to-end verifier output used case workspace:
 
-- `cases/case-20260708T181044`
+- `cases/case-20260708T181739`
 
 Important observed results from the real `test-files/` HEIC photos:
 
@@ -116,6 +116,7 @@ Important observed results from the real `test-files/` HEIC photos:
 - Guarded New Taipei prototype rejects a Taipei readiness report with jurisdiction and official URL mismatch issues.
 - Case readiness Markdown checklist verification: `ok`, reporter-profile values omitted.
 - Case record Markdown and case-history summary verification: `ok`, official case number included, lookup-password stored status reported, and lookup password value omitted.
+- Official receipt gate verification: `recorded`, and submitted cases missing official case number or submitted time are routed to `complete_official_receipt`.
 - Case correction tracking verification: `ok`, correction status, due time, and item count recorded in summaries and UI.
 - Metadata embedding statuses on this machine: `sidecar_only`, `sidecar_only`
 - Latest Taipei official preflight: `ok`, 6 present selectors, 3 deferred selectors, 0 missing selectors.

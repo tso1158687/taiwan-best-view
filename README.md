@@ -161,6 +161,8 @@ npm run export:case-record -- cases/<case-id>/case-record.json
 npm run list:cases
 ```
 
+After marking a case as `submitted_by_user`, the workflow checklist requires the official case number and submitted time before treating the receipt as recorded and allowing archive export.
+
 `export:case-record` writes `case-record-summary.md` next to the JSON record. The summary is intended for human review and archive notes; it reports whether a lookup password is stored in the JSON, but does not print the password value.
 
 To review case history in the browser UI, write a JSON summary and import it with the `匯入 JSON` button. The history summary reports whether a lookup password is stored, but does not include the password value:

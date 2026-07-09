@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathExists } from "./system.mjs";
 import { validateCaseDraft } from "./case-draft-validation.mjs";
+import { officialReceiptStatus } from "./case-records.mjs";
 
 const ARTIFACTS = [
   { id: "draft", file: "draft.json", title: "Case draft" },
@@ -116,6 +117,10 @@ function prototypeCommand({ caseDirectory, jurisdiction }) {
 function planFixtureCommand({ caseDirectory, jurisdiction }) {
   const planFile = jurisdiction === "new_taipei" ? "new-taipei-automation-plan.json" : "taipei-automation-plan.json";
   return `npm run fixture:plan -- ${caseDirectory}/submission-packet.json ${caseDirectory}/${planFile}`;
+}
+
+function updateReceiptCommand(caseDirectory) {
+  return `npm run update:case-record -- ${caseDirectory}/case-record.json --case-number <official-case-number> --submitted-at <ISO datetime> --submission-status submitted_by_user --local-status submitted`;
 }
 
 function dryRunCommand({ caseDirectory, jurisdiction }) {
@@ -247,7 +252,17 @@ function recommendedNextAction({ caseDirectory, jurisdiction, artifacts, draftVa
       id: "wait_for_manual_submission",
       title: "Record manual submission details",
       reason: "A case record exists, but official submission has not been marked as completed by the user.",
-      command: `npm run update:case-record -- ${caseDirectory}/case-record.json --case-number <official-case-number> --submitted-at <ISO datetime> --submission-status submitted_by_user --local-status submitted`,
+      command: updateReceiptCommand(caseDirectory),
+      requiresHuman: true,
+    };
+  }
+
+  if (officialReceiptStatus(record) === "needs_receipt_details") {
+    return {
+      id: "complete_official_receipt",
+      title: "Complete official receipt details",
+      reason: "The case is marked as manually submitted, but the official case number or submitted time is missing.",
+      command: updateReceiptCommand(caseDirectory),
       requiresHuman: true,
     };
   }
@@ -299,6 +314,7 @@ export async function createCaseWorkflowChecklist({ caseDirectory }) {
       readinessReport: statusOrMissing(readiness?.status),
       canOpenOfficialSiteForHumanReview: readiness?.canOpenOfficialSiteForHumanReview === true,
       caseRecord: statusOrMissing(record?.submissionStatus),
+      officialReceipt: record ? officialReceiptStatus(record) : "missing",
       automation: statusOrMissing(record?.automationStatus),
       planFixture: artifacts.find((artifact) => artifact.id === "plan_fixture_report")?.status || "missing",
     },
@@ -320,6 +336,7 @@ export function formatCaseWorkflowChecklistMarkdown(checklist) {
     `- Readiness report: ${checklist.statuses.readinessReport}`,
     `- Can open official site for human review: ${checklist.statuses.canOpenOfficialSiteForHumanReview ? "yes" : "no"}`,
     `- Case record: ${checklist.statuses.caseRecord}`,
+    `- Official receipt: ${checklist.statuses.officialReceipt}`,
     `- Automation: ${checklist.statuses.automation}`,
     `- Plan fixture: ${checklist.statuses.planFixture}`,
     "",
